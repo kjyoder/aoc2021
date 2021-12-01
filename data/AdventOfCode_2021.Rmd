@@ -1,0 +1,62 @@
+---
+title: "Advent of Code"
+output: html_notebook
+---
+
+```{r}
+require(tidyverse)
+```
+
+# Day 1 - Part 1
+
+```{r}
+d <- read_csv('data/aoc-1.1.txt', col_names = 'depth')
+d %>% head()
+```
+
+```{r}
+d %>%
+  mutate(prev = lag(depth)) %>%
+  mutate(increase = case_when(
+    depth > prev ~ 1,
+    TRUE ~ 0
+  )) %>%
+  count(increase)
+```
+
+## Part 2
+```{r}
+d_lag1 <- d %>%
+  mutate(prev = lag(depth)) %>%
+  mutate(increase = case_when(
+    depth > prev ~ 1,
+    is.na(prev) ~ NA_real_,
+    TRUE ~ 0
+  ))
+head(d_lag1)
+```
+
+```{r}
+d3 <- d %>%
+  mutate(depth2 = lag(depth),
+         depth3 = lag(depth2))
+head(d3)
+```
+
+```{r}
+d_lag3 <- d3 %>%
+  mutate(GroupSum = depth + depth2 + depth3,
+         prev = lag(GroupSum))
+head(d_lag3)
+```
+
+```{r}
+d_lag3 %>%
+  mutate(increase = case_when(
+    is.na(prev) ~ NA_real_,
+    GroupSum > prev ~ 1,
+    TRUE ~ 0
+  )) %>%
+  count(increase)
+```
+
