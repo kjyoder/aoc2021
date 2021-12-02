@@ -60,3 +60,56 @@ d_lag3 %>%
   count(increase)
 ```
 
+# Day 2: Dive!
+
+## Part 1
+Take list of commands and determine final position
+
+```{r}
+d <- read_delim('data/aoc-2.txt', col_names=c('direction', 'distance'),
+              delim=' ')
+d %>% head()
+```
+
+```{r}
+d_sum <- d %>% 
+  group_by(direction) %>%
+  summarize(distance = sum(distance))
+d_horizontal <- d_sum %>%
+  filter(direction == 'forward') %>%
+  pull(distance)
+d_down <- d_sum %>%
+  filter(direction == 'down') %>%
+  pull(distance) 
+d_up <- d_sum %>%
+  filter(direction == 'up') %>%
+  pull(distance)
+d_vertical <- d_down - d_up
+(d_total <- d_horizontal * d_vertical)
+```
+
+## Part 2
+Actually, we want to track `aim` which starts at 0
+* `down X` *increases* aim by `X`
+* `up X` *decreases* aim by `X`
+* `forward X` (1) increases horizontal positional by `X` and (2) increases depth by `aim` *multiplied* by `X`
+
+```{r}
+# initialize aim and position
+aim <- 0
+h_pos <- 0
+depth <- 0
+
+for (i in 1:nrow(d)) {
+  if (d$direction[i] == 'forward') {
+    h_pos = h_pos + d$distance[i]
+    depth = depth + aim * d$distance[i]
+  }
+  else if (d$direction[i] == 'up') aim = aim - d$distance[i]
+  else if (d$direction[i] == 'down') aim = aim + d$distance[i]
+}
+
+h_pos * depth
+```
+
+
