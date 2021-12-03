@@ -111,5 +111,129 @@ for (i in 1:nrow(d)) {
 
 h_pos * depth
 ```
+# Day 3: Binary Diagnostic
+```{r}
+require(tidyverse)
+d <- read_csv('data/aoc-3.txt',
+              col_names = 'reading')
+d %>% head()
+```
 
+```{r}
+# split each digit into its own column
+ds <- d %>%
+  separate(reading, into=str_c('C',c(0:11)),
+           sep=c(1:11)) %>%
+  
+  mutate_if(is.character, as.numeric) 
+# convert to numbers, then sum columns
+dsums <- ds %>% 
+  colSums()
+# gamma is > 500
+gamma_bits <- ifelse(dsums > 500, 1, 0)
+# epsilon is < 500
+epsilon_bits <- ifelse(dsums < 500, 1, 0)
+
+# convert from binary bits to decimal
+gamma_rate <- 0
+epsilon_rate <- 0
+for (i in 1:12) {
+  idx <- 13-i
+  gamma_rate <- gamma_rate + gamma_bits[idx] * 2^(i-1)
+  epsilon_rate <- epsilon_rate + epsilon_bits[idx] * 2^(i-1)
+}
+gamma_rate * epsilon_rate
+```
+## Part 2
+Now verify `life support rating` which is `oxygen generater rating` * `CO2 scrubber rating`
+
+**oxygen generator rating**
+* determine most common value in current bit position and keep only number with that bit in that position. If `0` and `1` are equally common, keep `1`.
+
+**CO2 scrubber rating**
+* determine the least common value. If `0` and `1` are equally common, keep `0`.
+
+After determining *bit criteria*, discard numbers which don't match the bit criteria. If you only have one number left, stop, this is the rating. Otherwise, repeat, considering next bit to the right.
+
+```{r}
+ox1 <- gamma_bits[1]
+dso <- ds %>%  filter(C0 == ox1)
+dso %>% count(C1)
+ox2 <- 0
+dso <- dso %>%  filter(C1 == ox2)
+dso %>% count(C2)
+ox3 <- 0
+dso <- dso %>% filter(C2 == ox3)
+dso %>% count(C3)
+ox4 <- 1
+dso <- dso %>% filter(C3 == ox4)
+dso %>% count(C4)
+ox5 <- 1
+dso <- dso %>% filter(C4 == ox5)
+dso %>% count(C5)
+ox5 <- 1
+dso <- dso %>% filter(C5 == ox5)
+dso %>% count(C6)
+ox6 <- 1
+dso <- dso %>% filter(C6 == ox6)
+dso %>% count(C7)
+ox7 <- 1
+dso <- dso %>% filter(C7 == ox7)
+dso %>% count(C8)
+ox8 <- 1
+dso <- dso %>% filter(C8 == ox8)
+dso %>% count(C9)
+ox9 <- 1
+dso <- dso %>% filter(C9 == ox9)
+dso %>% count(C10)
+ox10 <- 0
+dso <- dso %>% filter(C10 == ox10)
+dso %>% count(C11)
+ox11 <- 1
+dso <- dso %>% filter(C11 == ox11)
+oxy_bits <- dso[1,]
+```
+
+```{r}
+co1 <- epsilon_bits[1]
+dsco <- ds %>%  filter(C0 == co1)
+dsco %>% count(C1)
+co2 <- 0
+dsco <- dsco %>%  filter(C1 == co2)
+dsco %>% count(C2)
+co3 <- 1
+dsco <- dsco %>% filter(C2 == co3)
+dsco %>% count(C3)
+co4 <- 0
+dsco <- dsco %>% filter(C3 == co4)
+dsco %>% count(C4)
+co5 <- 1
+dsco <- dsco %>% filter(C4 == co5)
+dsco %>% count(C5)
+co5 <- 0
+dsco <- dsco %>% filter(C5 == co5)
+dsco %>% count(C6)
+co6 <- 0
+dsco <- dsco %>% filter(C6 == co6)
+dsco %>% count(C7)
+co7 <- 0
+dsco <- dsco %>% filter(C7 == co7)
+dsco %>% count(C8)
+co8 <- 0
+dsco <- dsco %>% filter(C8 == co8)
+
+co_bits <- dsco[1,]
+```
+
+```{r}
+# convert from binary bits to decimal
+oxy_rate <- 0
+co_rate <- 0
+for (i in 1:12) {
+  idx <- 13-i
+  oxy_rate <- oxy_rate + oxy_bits[idx] * 2^(i-1)
+  co_rate <- co_rate + co_bits[idx] * 2^(i-1)
+}
+oxy_rate * co_rate
+```
 
