@@ -237,3 +237,219 @@ for (i in 1:12) {
 oxy_rate * co_rate
 ```
 
+# Day 4: Giant Squid
+```{r}
+require(tidyverse)
+draws <- read_csv('data/aoc-4_draws.txt', col_names=FALSE)
+draws <- draws %>%
+  pivot_longer(everything(), names_to = 'Draw', values_to = 'Number')
+draws %>% head()
+```
+
+```{r}
+boards <- read_delim('data/aoc-4_boards.txt', delim=" ",
+                     col_names=FALSE)
+n_board <- nrow(boards)/5
+boards$board <- rep(1:n_board, each=5)
+boards <- boards %>%
+  mutate_if(is.character, as.numeric) 
+boards %>% head()
+```
+
+Let's make a class to hold the board and keep track of "hits"
+```{r}
+B <- vector(mode = 'list', length = n_board)
+hits <- matrix(rep(0,25), nrow=5)
+for (i in 1:n_board) {
+  b <- boards %>% 
+    filter(board == i) %>%
+    select(-board)
+  bd <- list('bid' = i, 'board' = b, 'hits' = hits, 'score' = 0)
+  class(bd) <- 'Board'
+  B[[i]] <- bd
+}
+
+mark <- function(object, ...) {
+  UseMethod('mark')
+}
+
+check <- function(object) {
+  UseMethod('check')
+}
+
+score <- function(object, ...) {
+  UseMethod('score')
+}
+
+draw <- function(object, ...) {
+  UseMethod('draw')
+}
+
+mark.Board <- function(object, num) {
+  # check for the given number and add it to hits if it exists
+  found <- FALSE
+  row <- NULL
+  col <- NULL
+  for (i in 1:5) {
+    if (num %in% object$board[i,]) {
+      row <- i
+      for (j in 1:5) {
+        if (num == object$board[i,j]) {
+          col <- j
+          found <- TRUE
+        }
+      }
+    }
+  }
+  if (found) {
+    object$hits[row,col] <- 1
+  }
+  
+  return(object)
+}
+
+check.Board <- function(object) {
+  bingo <- FALSE
+  # check rows
+  if (any(rowSums(object$hits) == 5)) {
+    bingo <- TRUE
+  } else if (any(colSums(object$hits) == 5)) {
+    bingo <- TRUE
+  }
+  return(bingo)
+}
+
+score.Board <- function(object, num) {
+  # sum unmarked numbers and multiply by last pulled number
+  object$score <- num * sum(object$board[object$hits == 0])
+  return(object)
+}
+
+draw.Board <- function(object, num) {
+  object <- mark(object, num)
+  bingo <- check(object)
+  if (bingo) {
+    object <- score(object, num)
+  }
+  return(object)
+}
+```
+
+```{r}
+all_boards <- B
+winner <- FALSE
+for (ii in 1:nrow(draws)) {
+  pull <- draws[ii,2]
+  for (bi in 1:n_board) {
+    bd <- draw(all_boards[[bi]], pull)
+    if (bd$score > 0) {
+      print(str_c('Board ', bd$bid, ' won! Pull ', pull, ', score = ', bd$score))
+      winner <- TRUE
+    }
+    all_boards[[bi]] <- bd
+  }
+  if (winner) break
+}
+```
+
+## Part 2: which board wins last?
+```{r}
+winning_pull <- rep(0, n_board)
+winning_score <- rep(0, n_board)
+all_boards <- B
+
+for (ii in 1:nrow(draws)) {
+  pull <- draws[ii,2]
+  for (bi in 1:n_board) {
+    if (winning_pull[bi] > 0) {
+      # skip if board already scored
+    } else {
+      bd <- draw(all_boards[[bi]], pull)
+      if (bd$score > 0) {
+        winning_pull[[bi]] <- ii
+        winning_score[[bi]] <- bd$score
+      }
+      all_boards[[bi]] <- bd
+    }
+  }
+}
+```
+
+```{r}
+results <- tibble(
+  pull = winning_pull,
+  score = winning_score
+)
+results %>%
+  filter(pull == max(winning_pull)) %>%
+  pull(score)
+```
+
+
+# Day 5:
+```{r}
+#unlockBinding("last.warning", baseenv())
+#assign("last.warning", NULL, envir = baseenv())
+library(tidyverse)
+```
+
+```{r}
+# read as characgter to handle ###,### format
+d <- read_csv('data/aoc-5.txt', col_names=c('x1','m','y2'),
+              col_types = cols(.default=col_integer(),
+                               m = col_character()))
+d <- d %>% 
+  separate(m, into = c('y1', 'x2')) %>%
+  mutate(y1 = as.numeric(y1),
+         x2 = as.numeric(x2))
+d %>% head()
+```
+
+Determine number of points with more than one line going through it
+```{r}
+summary(d)
+```
+
+```{r}
+vents <- matrix(rep(0,1000*1000), nrow=1000)
+
+h_lines <- d %>%
+  filter(x1 == x2)
+v_lines <- d %>%
+  filter(y1 == y2)
+
+for (i in 1:nrow(h_lines)) {
+  x <- h_lines[[i,1]]
+  y_range <- c(h_lines[[i,2]]:h_lines[[i,4]])
+  vents[x, y_range] <- vents[x, y_range] + 1
+}
+
+for (i in 1:nrow(v_lines)) {
+  y <- v_lines[[i,2]]
+  x_range <- c(v_lines[[i,1]]:v_lines[[i,3]])
+  vents[x_range, y] <- vents[x_range, y] + 1
+}
+```
+
+```{r}
+sum(vents > 1)
+```
+
+## Part 2
+Don't forget diagonals!
+```{r}
+diags <- d %>%
+  filter( (x1 != x2) & (y1 != y2))
+
+for (i in 1:nrow(diags)) {
+  x_range <- c(diags[[i,1]]:diags[[i,3]])
+  y_range <- c(diags[[i,2]]:diags[[i,4]])
+  for (j in 1:length(x_range)) {
+    vents[x_range[j], y_range[j]] <- vents[x_range[j], y_range[j]] + 1
+  }
+  
+}
+
+sum(vents > 1)
+```
+
