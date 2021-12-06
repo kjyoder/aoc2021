@@ -1751,34 +1751,81 @@ summary {
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucmVxdWlyZSh0aWR5dmVyc2UpXG5gYGAifQ== -->
+<pre class="r"><code>require(tidyverse)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <div id="day-1---part-1" class="section level1">
 <h1>Day 1 - Part 1</h1>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZCA8LSByZWFkX2NzdignZGF0YS9hb2MtMS4xLnR4dCcsIGNvbF9uYW1lcyA9ICdkZXB0aCcpXG5kICU+JSBoZWFkKClcbmBgYCJ9 -->
+<pre class="r"><code>d &lt;- read_csv('data/aoc-1.1.txt', col_names = 'depth')
+d %&gt;% head()</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZCAlPiVcbiAgbXV0YXRlKHByZXYgPSBsYWcoZGVwdGgpKSAlPiVcbiAgbXV0YXRlKGluY3JlYXNlID0gY2FzZV93aGVuKFxuICAgIGRlcHRoID4gcHJldiB+IDEsXG4gICAgVFJVRSB+IDBcbiAgKSkgJT4lXG4gIGNvdW50KGluY3JlYXNlKVxuYGBgIn0= -->
+<pre class="r"><code>d %&gt;%
+  mutate(prev = lag(depth)) %&gt;%
+  mutate(increase = case_when(
+    depth &gt; prev ~ 1,
+    TRUE ~ 0
+  )) %&gt;%
+  count(increase)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <div id="part-2" class="section level2">
 <h2>Part 2</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZF9sYWcxIDwtIGQgJT4lXG4gIG11dGF0ZShwcmV2ID0gbGFnKGRlcHRoKSkgJT4lXG4gIG11dGF0ZShpbmNyZWFzZSA9IGNhc2Vfd2hlbihcbiAgICBkZXB0aCA+IHByZXYgfiAxLFxuICAgIGlzLm5hKHByZXYpIH4gTkFfcmVhbF8sXG4gICAgVFJVRSB+IDBcbiAgKSlcbmhlYWQoZF9sYWcxKVxuYGBgIn0= -->
+<pre class="r"><code>d_lag1 &lt;- d %&gt;%
+  mutate(prev = lag(depth)) %&gt;%
+  mutate(increase = case_when(
+    depth &gt; prev ~ 1,
+    is.na(prev) ~ NA_real_,
+    TRUE ~ 0
+  ))
+head(d_lag1)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZDMgPC0gZCAlPiVcbiAgbXV0YXRlKGRlcHRoMiA9IGxhZyhkZXB0aCksXG4gICAgICAgICBkZXB0aDMgPSBsYWcoZGVwdGgyKSlcbmhlYWQoZDMpXG5gYGAifQ== -->
+<pre class="r"><code>d3 &lt;- d %&gt;%
+  mutate(depth2 = lag(depth),
+         depth3 = lag(depth2))
+head(d3)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZF9sYWczIDwtIGQzICU+JVxuICBtdXRhdGUoR3JvdXBTdW0gPSBkZXB0aCArIGRlcHRoMiArIGRlcHRoMyxcbiAgICAgICAgIHByZXYgPSBsYWcoR3JvdXBTdW0pKVxuaGVhZChkX2xhZzMpXG5gYGAifQ== -->
+<pre class="r"><code>d_lag3 &lt;- d3 %&gt;%
+  mutate(GroupSum = depth + depth2 + depth3,
+         prev = lag(GroupSum))
+head(d_lag3)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZF9sYWczICU+JVxuICBtdXRhdGUoaW5jcmVhc2UgPSBjYXNlX3doZW4oXG4gICAgaXMubmEocHJldikgfiBOQV9yZWFsXyxcbiAgICBHcm91cFN1bSA+IHByZXYgfiAxLFxuICAgIFRSVUUgfiAwXG4gICkpICU+JVxuICBjb3VudChpbmNyZWFzZSlcbmBgYCJ9 -->
+<pre class="r"><code>d_lag3 %&gt;%
+  mutate(increase = case_when(
+    is.na(prev) ~ NA_real_,
+    GroupSum &gt; prev ~ 1,
+    TRUE ~ 0
+  )) %&gt;%
+  count(increase)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -1790,10 +1837,31 @@ summary {
 <p>Take list of commands and determine final position</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZCA8LSByZWFkX2RlbGltKCdkYXRhL2FvYy0yLnR4dCcsIGNvbF9uYW1lcz1jKCdkaXJlY3Rpb24nLCAnZGlzdGFuY2UnKSxcbiAgICAgICAgICAgICAgZGVsaW09JyAnKVxuZCAlPiUgaGVhZCgpXG5gYGAifQ== -->
+<pre class="r"><code>d &lt;- read_delim('data/aoc-2.txt', col_names=c('direction', 'distance'),
+              delim=' ')
+d %&gt;% head()</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZF9zdW0gPC0gZCAlPiUgXG4gIGdyb3VwX2J5KGRpcmVjdGlvbikgJT4lXG4gIHN1bW1hcml6ZShkaXN0YW5jZSA9IHN1bShkaXN0YW5jZSkpXG5kX2hvcml6b250YWwgPC0gZF9zdW0gJT4lXG4gIGZpbHRlcihkaXJlY3Rpb24gPT0gJ2ZvcndhcmQnKSAlPiVcbiAgcHVsbChkaXN0YW5jZSlcbmRfZG93biA8LSBkX3N1bSAlPiVcbiAgZmlsdGVyKGRpcmVjdGlvbiA9PSAnZG93bicpICU+JVxuICBwdWxsKGRpc3RhbmNlKSBcbmRfdXAgPC0gZF9zdW0gJT4lXG4gIGZpbHRlcihkaXJlY3Rpb24gPT0gJ3VwJykgJT4lXG4gIHB1bGwoZGlzdGFuY2UpXG5kX3ZlcnRpY2FsIDwtIGRfZG93biAtIGRfdXBcbihkX3RvdGFsIDwtIGRfaG9yaXpvbnRhbCAqIGRfdmVydGljYWwpXG5gYGAifQ== -->
+<pre class="r"><code>d_sum &lt;- d %&gt;% 
+  group_by(direction) %&gt;%
+  summarize(distance = sum(distance))
+d_horizontal &lt;- d_sum %&gt;%
+  filter(direction == 'forward') %&gt;%
+  pull(distance)
+d_down &lt;- d_sum %&gt;%
+  filter(direction == 'down') %&gt;%
+  pull(distance) 
+d_up &lt;- d_sum %&gt;%
+  filter(direction == 'up') %&gt;%
+  pull(distance)
+d_vertical &lt;- d_down - d_up
+(d_total &lt;- d_horizontal * d_vertical)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -1802,6 +1870,23 @@ summary {
 <p>Actually, we want to track <code>aim</code> which starts at 0 * <code>down X</code> <em>increases</em> aim by <code>X</code> * <code>up X</code> <em>decreases</em> aim by <code>X</code> * <code>forward X</code> (1) increases horizontal positional by <code>X</code> and (2) increases depth by <code>aim</code> <em>multiplied</em> by <code>X</code></p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBpbml0aWFsaXplIGFpbSBhbmQgcG9zaXRpb25cbmFpbSA8LSAwXG5oX3BvcyA8LSAwXG5kZXB0aCA8LSAwXG5cbmZvciAoaSBpbiAxOm5yb3coZCkpIHtcbiAgaWYgKGQkZGlyZWN0aW9uW2ldID09ICdmb3J3YXJkJykge1xuICAgIGhfcG9zID0gaF9wb3MgKyBkJGRpc3RhbmNlW2ldXG4gICAgZGVwdGggPSBkZXB0aCArIGFpbSAqIGQkZGlzdGFuY2VbaV1cbiAgfVxuICBlbHNlIGlmIChkJGRpcmVjdGlvbltpXSA9PSAndXAnKSBhaW0gPSBhaW0gLSBkJGRpc3RhbmNlW2ldXG4gIGVsc2UgaWYgKGQkZGlyZWN0aW9uW2ldID09ICdkb3duJykgYWltID0gYWltICsgZCRkaXN0YW5jZVtpXVxufVxuXG5oX3BvcyAqIGRlcHRoXG5gYGAifQ== -->
+<pre class="r"><code># initialize aim and position
+aim &lt;- 0
+h_pos &lt;- 0
+depth &lt;- 0
+
+for (i in 1:nrow(d)) {
+  if (d$direction[i] == 'forward') {
+    h_pos = h_pos + d$distance[i]
+    depth = depth + aim * d$distance[i]
+  }
+  else if (d$direction[i] == 'up') aim = aim - d$distance[i]
+  else if (d$direction[i] == 'down') aim = aim + d$distance[i]
+}
+
+h_pos * depth</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -1810,10 +1895,41 @@ summary {
 <h1>Day 3: Binary Diagnostic</h1>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucmVxdWlyZSh0aWR5dmVyc2UpXG5kIDwtIHJlYWRfY3N2KCdkYXRhL2FvYy0zLnR4dCcsXG4gICAgICAgICAgICAgIGNvbF9uYW1lcyA9ICdyZWFkaW5nJylcbmQgJT4lIGhlYWQoKVxuYGBgIn0= -->
+<pre class="r"><code>require(tidyverse)
+d &lt;- read_csv('data/aoc-3.txt',
+              col_names = 'reading')
+d %&gt;% head()</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBzcGxpdCBlYWNoIGRpZ2l0IGludG8gaXRzIG93biBjb2x1bW5cbmRzIDwtIGQgJT4lXG4gIHNlcGFyYXRlKHJlYWRpbmcsIGludG89c3RyX2MoJ0MnLGMoMDoxMSkpLFxuICAgICAgICAgICBzZXA9YygxOjExKSkgJT4lXG4gIFxuICBtdXRhdGVfaWYoaXMuY2hhcmFjdGVyLCBhcy5udW1lcmljKSBcbiMgY29udmVydCB0byBudW1iZXJzLCB0aGVuIHN1bSBjb2x1bW5zXG5kc3VtcyA8LSBkcyAlPiUgXG4gIGNvbFN1bXMoKVxuIyBnYW1tYSBpcyA+IDUwMFxuZ2FtbWFfYml0cyA8LSBpZmVsc2UoZHN1bXMgPiA1MDAsIDEsIDApXG4jIGVwc2lsb24gaXMgPCA1MDBcbmVwc2lsb25fYml0cyA8LSBpZmVsc2UoZHN1bXMgPCA1MDAsIDEsIDApXG5cbiMgY29udmVydCBmcm9tIGJpbmFyeSBiaXRzIHRvIGRlY2ltYWxcbmdhbW1hX3JhdGUgPC0gMFxuZXBzaWxvbl9yYXRlIDwtIDBcbmZvciAoaSBpbiAxOjEyKSB7XG4gIGlkeCA8LSAxMy1pXG4gIGdhbW1hX3JhdGUgPC0gZ2FtbWFfcmF0ZSArIGdhbW1hX2JpdHNbaWR4XSAqIDJeKGktMSlcbiAgZXBzaWxvbl9yYXRlIDwtIGVwc2lsb25fcmF0ZSArIGVwc2lsb25fYml0c1tpZHhdICogMl4oaS0xKVxufVxuZ2FtbWFfcmF0ZSAqIGVwc2lsb25fcmF0ZVxuYGBgIn0= -->
+<pre class="r"><code># split each digit into its own column
+ds &lt;- d %&gt;%
+  separate(reading, into=str_c('C',c(0:11)),
+           sep=c(1:11)) %&gt;%
+  
+  mutate_if(is.character, as.numeric) 
+# convert to numbers, then sum columns
+dsums &lt;- ds %&gt;% 
+  colSums()
+# gamma is &gt; 500
+gamma_bits &lt;- ifelse(dsums &gt; 500, 1, 0)
+# epsilon is &lt; 500
+epsilon_bits &lt;- ifelse(dsums &lt; 500, 1, 0)
+
+# convert from binary bits to decimal
+gamma_rate &lt;- 0
+epsilon_rate &lt;- 0
+for (i in 1:12) {
+  idx &lt;- 13-i
+  gamma_rate &lt;- gamma_rate + gamma_bits[idx] * 2^(i-1)
+  epsilon_rate &lt;- epsilon_rate + epsilon_bits[idx] * 2^(i-1)
+}
+gamma_rate * epsilon_rate</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <div id="part-2-2" class="section level2">
@@ -1824,14 +1940,93 @@ summary {
 <p>After determining <em>bit criteria</em>, discard numbers which don’t match the bit criteria. If you only have one number left, stop, this is the rating. Otherwise, repeat, considering next bit to the right.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxub3gxIDwtIGdhbW1hX2JpdHNbMV1cbmRzbyA8LSBkcyAlPiUgIGZpbHRlcihDMCA9PSBveDEpXG5kc28gJT4lIGNvdW50KEMxKVxub3gyIDwtIDBcbmRzbyA8LSBkc28gJT4lICBmaWx0ZXIoQzEgPT0gb3gyKVxuZHNvICU+JSBjb3VudChDMilcbm94MyA8LSAwXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzIgPT0gb3gzKVxuZHNvICU+JSBjb3VudChDMylcbm94NCA8LSAxXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzMgPT0gb3g0KVxuZHNvICU+JSBjb3VudChDNClcbm94NSA8LSAxXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzQgPT0gb3g1KVxuZHNvICU+JSBjb3VudChDNSlcbm94NSA8LSAxXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzUgPT0gb3g1KVxuZHNvICU+JSBjb3VudChDNilcbm94NiA8LSAxXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzYgPT0gb3g2KVxuZHNvICU+JSBjb3VudChDNylcbm94NyA8LSAxXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzcgPT0gb3g3KVxuZHNvICU+JSBjb3VudChDOClcbm94OCA8LSAxXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzggPT0gb3g4KVxuZHNvICU+JSBjb3VudChDOSlcbm94OSA8LSAxXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzkgPT0gb3g5KVxuZHNvICU+JSBjb3VudChDMTApXG5veDEwIDwtIDBcbmRzbyA8LSBkc28gJT4lIGZpbHRlcihDMTAgPT0gb3gxMClcbmRzbyAlPiUgY291bnQoQzExKVxub3gxMSA8LSAxXG5kc28gPC0gZHNvICU+JSBmaWx0ZXIoQzExID09IG94MTEpXG5veHlfYml0cyA8LSBkc29bMSxdXG5gYGAifQ== -->
+<pre class="r"><code>ox1 &lt;- gamma_bits[1]
+dso &lt;- ds %&gt;%  filter(C0 == ox1)
+dso %&gt;% count(C1)
+ox2 &lt;- 0
+dso &lt;- dso %&gt;%  filter(C1 == ox2)
+dso %&gt;% count(C2)
+ox3 &lt;- 0
+dso &lt;- dso %&gt;% filter(C2 == ox3)
+dso %&gt;% count(C3)
+ox4 &lt;- 1
+dso &lt;- dso %&gt;% filter(C3 == ox4)
+dso %&gt;% count(C4)
+ox5 &lt;- 1
+dso &lt;- dso %&gt;% filter(C4 == ox5)
+dso %&gt;% count(C5)
+ox5 &lt;- 1
+dso &lt;- dso %&gt;% filter(C5 == ox5)
+dso %&gt;% count(C6)
+ox6 &lt;- 1
+dso &lt;- dso %&gt;% filter(C6 == ox6)
+dso %&gt;% count(C7)
+ox7 &lt;- 1
+dso &lt;- dso %&gt;% filter(C7 == ox7)
+dso %&gt;% count(C8)
+ox8 &lt;- 1
+dso &lt;- dso %&gt;% filter(C8 == ox8)
+dso %&gt;% count(C9)
+ox9 &lt;- 1
+dso &lt;- dso %&gt;% filter(C9 == ox9)
+dso %&gt;% count(C10)
+ox10 &lt;- 0
+dso &lt;- dso %&gt;% filter(C10 == ox10)
+dso %&gt;% count(C11)
+ox11 &lt;- 1
+dso &lt;- dso %&gt;% filter(C11 == ox11)
+oxy_bits &lt;- dso[1,]</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY28xIDwtIGVwc2lsb25fYml0c1sxXVxuZHNjbyA8LSBkcyAlPiUgIGZpbHRlcihDMCA9PSBjbzEpXG5kc2NvICU+JSBjb3VudChDMSlcbmNvMiA8LSAwXG5kc2NvIDwtIGRzY28gJT4lICBmaWx0ZXIoQzEgPT0gY28yKVxuZHNjbyAlPiUgY291bnQoQzIpXG5jbzMgPC0gMVxuZHNjbyA8LSBkc2NvICU+JSBmaWx0ZXIoQzIgPT0gY28zKVxuZHNjbyAlPiUgY291bnQoQzMpXG5jbzQgPC0gMFxuZHNjbyA8LSBkc2NvICU+JSBmaWx0ZXIoQzMgPT0gY280KVxuZHNjbyAlPiUgY291bnQoQzQpXG5jbzUgPC0gMVxuZHNjbyA8LSBkc2NvICU+JSBmaWx0ZXIoQzQgPT0gY281KVxuZHNjbyAlPiUgY291bnQoQzUpXG5jbzUgPC0gMFxuZHNjbyA8LSBkc2NvICU+JSBmaWx0ZXIoQzUgPT0gY281KVxuZHNjbyAlPiUgY291bnQoQzYpXG5jbzYgPC0gMFxuZHNjbyA8LSBkc2NvICU+JSBmaWx0ZXIoQzYgPT0gY282KVxuZHNjbyAlPiUgY291bnQoQzcpXG5jbzcgPC0gMFxuZHNjbyA8LSBkc2NvICU+JSBmaWx0ZXIoQzcgPT0gY283KVxuZHNjbyAlPiUgY291bnQoQzgpXG5jbzggPC0gMFxuZHNjbyA8LSBkc2NvICU+JSBmaWx0ZXIoQzggPT0gY284KVxuXG5jb19iaXRzIDwtIGRzY29bMSxdXG5gYGAifQ== -->
+<pre class="r"><code>co1 &lt;- epsilon_bits[1]
+dsco &lt;- ds %&gt;%  filter(C0 == co1)
+dsco %&gt;% count(C1)
+co2 &lt;- 0
+dsco &lt;- dsco %&gt;%  filter(C1 == co2)
+dsco %&gt;% count(C2)
+co3 &lt;- 1
+dsco &lt;- dsco %&gt;% filter(C2 == co3)
+dsco %&gt;% count(C3)
+co4 &lt;- 0
+dsco &lt;- dsco %&gt;% filter(C3 == co4)
+dsco %&gt;% count(C4)
+co5 &lt;- 1
+dsco &lt;- dsco %&gt;% filter(C4 == co5)
+dsco %&gt;% count(C5)
+co5 &lt;- 0
+dsco &lt;- dsco %&gt;% filter(C5 == co5)
+dsco %&gt;% count(C6)
+co6 &lt;- 0
+dsco &lt;- dsco %&gt;% filter(C6 == co6)
+dsco %&gt;% count(C7)
+co7 &lt;- 0
+dsco &lt;- dsco %&gt;% filter(C7 == co7)
+dsco %&gt;% count(C8)
+co8 &lt;- 0
+dsco &lt;- dsco %&gt;% filter(C8 == co8)
+
+co_bits &lt;- dsco[1,]</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBjb252ZXJ0IGZyb20gYmluYXJ5IGJpdHMgdG8gZGVjaW1hbFxub3h5X3JhdGUgPC0gMFxuY29fcmF0ZSA8LSAwXG5mb3IgKGkgaW4gMToxMikge1xuICBpZHggPC0gMTMtaVxuICBveHlfcmF0ZSA8LSBveHlfcmF0ZSArIG94eV9iaXRzW2lkeF0gKiAyXihpLTEpXG4gIGNvX3JhdGUgPC0gY29fcmF0ZSArIGNvX2JpdHNbaWR4XSAqIDJeKGktMSlcbn1cbm94eV9yYXRlICogY29fcmF0ZVxuYGBgIn0= -->
+<pre class="r"><code># convert from binary bits to decimal
+oxy_rate &lt;- 0
+co_rate &lt;- 0
+for (i in 1:12) {
+  idx &lt;- 13-i
+  oxy_rate &lt;- oxy_rate + oxy_bits[idx] * 2^(i-1)
+  co_rate &lt;- co_rate + co_bits[idx] * 2^(i-1)
+}
+oxy_rate * co_rate</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -1840,29 +2035,168 @@ summary {
 <h1>Day 4: Giant Squid</h1>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucmVxdWlyZSh0aWR5dmVyc2UpXG5kcmF3cyA8LSByZWFkX2NzdignZGF0YS9hb2MtNF9kcmF3cy50eHQnLCBjb2xfbmFtZXM9RkFMU0UpXG5kcmF3cyA8LSBkcmF3cyAlPiVcbiAgcGl2b3RfbG9uZ2VyKGV2ZXJ5dGhpbmcoKSwgbmFtZXNfdG8gPSAnRHJhdycsIHZhbHVlc190byA9ICdOdW1iZXInKVxuZHJhd3MgJT4lIGhlYWQoKVxuYGBgIn0= -->
+<pre class="r"><code>require(tidyverse)
+draws &lt;- read_csv('data/aoc-4_draws.txt', col_names=FALSE)
+draws &lt;- draws %&gt;%
+  pivot_longer(everything(), names_to = 'Draw', values_to = 'Number')
+draws %&gt;% head()</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYm9hcmRzIDwtIHJlYWRfZGVsaW0oJ2RhdGEvYW9jLTRfYm9hcmRzLnR4dCcsIGRlbGltPVwiIFwiLFxuICAgICAgICAgICAgICAgICAgICAgY29sX25hbWVzPUZBTFNFKVxubl9ib2FyZCA8LSBucm93KGJvYXJkcykvNVxuYm9hcmRzJGJvYXJkIDwtIHJlcCgxOm5fYm9hcmQsIGVhY2g9NSlcbmJvYXJkcyA8LSBib2FyZHMgJT4lXG4gIG11dGF0ZV9pZihpcy5jaGFyYWN0ZXIsIGFzLm51bWVyaWMpIFxuYm9hcmRzICU+JSBoZWFkKClcbmBgYCJ9 -->
+<pre class="r"><code>boards &lt;- read_delim('data/aoc-4_boards.txt', delim=&quot; &quot;,
+                     col_names=FALSE)
+n_board &lt;- nrow(boards)/5
+boards$board &lt;- rep(1:n_board, each=5)
+boards &lt;- boards %&gt;%
+  mutate_if(is.character, as.numeric) 
+boards %&gt;% head()</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Let’s make a class to hold the board and keep track of “hits”</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuQiA8LSB2ZWN0b3IobW9kZSA9ICdsaXN0JywgbGVuZ3RoID0gbl9ib2FyZClcbmhpdHMgPC0gbWF0cml4KHJlcCgwLDI1KSwgbnJvdz01KVxuZm9yIChpIGluIDE6bl9ib2FyZCkge1xuICBiIDwtIGJvYXJkcyAlPiUgXG4gICAgZmlsdGVyKGJvYXJkID09IGkpICU+JVxuICAgIHNlbGVjdCgtYm9hcmQpXG4gIGJkIDwtIGxpc3QoJ2JpZCcgPSBpLCAnYm9hcmQnID0gYiwgJ2hpdHMnID0gaGl0cywgJ3Njb3JlJyA9IDApXG4gIGNsYXNzKGJkKSA8LSAnQm9hcmQnXG4gIEJbW2ldXSA8LSBiZFxufVxuXG5tYXJrIDwtIGZ1bmN0aW9uKG9iamVjdCwgLi4uKSB7XG4gIFVzZU1ldGhvZCgnbWFyaycpXG59XG5cbmNoZWNrIDwtIGZ1bmN0aW9uKG9iamVjdCkge1xuICBVc2VNZXRob2QoJ2NoZWNrJylcbn1cblxuc2NvcmUgPC0gZnVuY3Rpb24ob2JqZWN0LCAuLi4pIHtcbiAgVXNlTWV0aG9kKCdzY29yZScpXG59XG5cbmRyYXcgPC0gZnVuY3Rpb24ob2JqZWN0LCAuLi4pIHtcbiAgVXNlTWV0aG9kKCdkcmF3Jylcbn1cblxubWFyay5Cb2FyZCA8LSBmdW5jdGlvbihvYmplY3QsIG51bSkge1xuICAjIGNoZWNrIGZvciB0aGUgZ2l2ZW4gbnVtYmVyIGFuZCBhZGQgaXQgdG8gaGl0cyBpZiBpdCBleGlzdHNcbiAgZm91bmQgPC0gRkFMU0VcbiAgcm93IDwtIE5VTExcbiAgY29sIDwtIE5VTExcbiAgZm9yIChpIGluIDE6NSkge1xuICAgIGlmIChudW0gJWluJSBvYmplY3QkYm9hcmRbaSxdKSB7XG4gICAgICByb3cgPC0gaVxuICAgICAgZm9yIChqIGluIDE6NSkge1xuICAgICAgICBpZiAobnVtID09IG9iamVjdCRib2FyZFtpLGpdKSB7XG4gICAgICAgICAgY29sIDwtIGpcbiAgICAgICAgICBmb3VuZCA8LSBUUlVFXG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cbiAgaWYgKGZvdW5kKSB7XG4gICAgb2JqZWN0JGhpdHNbcm93LGNvbF0gPC0gMVxuICB9XG4gIFxuICByZXR1cm4ob2JqZWN0KVxufVxuXG5jaGVjay5Cb2FyZCA8LSBmdW5jdGlvbihvYmplY3QpIHtcbiAgYmluZ28gPC0gRkFMU0VcbiAgIyBjaGVjayByb3dzXG4gIGlmIChhbnkocm93U3VtcyhvYmplY3QkaGl0cykgPT0gNSkpIHtcbiAgICBiaW5nbyA8LSBUUlVFXG4gIH0gZWxzZSBpZiAoYW55KGNvbFN1bXMob2JqZWN0JGhpdHMpID09IDUpKSB7XG4gICAgYmluZ28gPC0gVFJVRVxuICB9XG4gIHJldHVybihiaW5nbylcbn1cblxuc2NvcmUuQm9hcmQgPC0gZnVuY3Rpb24ob2JqZWN0LCBudW0pIHtcbiAgIyBzdW0gdW5tYXJrZWQgbnVtYmVycyBhbmQgbXVsdGlwbHkgYnkgbGFzdCBwdWxsZWQgbnVtYmVyXG4gIG9iamVjdCRzY29yZSA8LSBudW0gKiBzdW0ob2JqZWN0JGJvYXJkW29iamVjdCRoaXRzID09IDBdKVxuICByZXR1cm4ob2JqZWN0KVxufVxuXG5kcmF3LkJvYXJkIDwtIGZ1bmN0aW9uKG9iamVjdCwgbnVtKSB7XG4gIG9iamVjdCA8LSBtYXJrKG9iamVjdCwgbnVtKVxuICBiaW5nbyA8LSBjaGVjayhvYmplY3QpXG4gIGlmIChiaW5nbykge1xuICAgIG9iamVjdCA8LSBzY29yZShvYmplY3QsIG51bSlcbiAgfVxuICByZXR1cm4ob2JqZWN0KVxufVxuYGBgIn0= -->
+<pre class="r"><code>B &lt;- vector(mode = 'list', length = n_board)
+hits &lt;- matrix(rep(0,25), nrow=5)
+for (i in 1:n_board) {
+  b &lt;- boards %&gt;% 
+    filter(board == i) %&gt;%
+    select(-board)
+  bd &lt;- list('bid' = i, 'board' = b, 'hits' = hits, 'score' = 0)
+  class(bd) &lt;- 'Board'
+  B[[i]] &lt;- bd
+}
+
+mark &lt;- function(object, ...) {
+  UseMethod('mark')
+}
+
+check &lt;- function(object) {
+  UseMethod('check')
+}
+
+score &lt;- function(object, ...) {
+  UseMethod('score')
+}
+
+draw &lt;- function(object, ...) {
+  UseMethod('draw')
+}
+
+mark.Board &lt;- function(object, num) {
+  # check for the given number and add it to hits if it exists
+  found &lt;- FALSE
+  row &lt;- NULL
+  col &lt;- NULL
+  for (i in 1:5) {
+    if (num %in% object$board[i,]) {
+      row &lt;- i
+      for (j in 1:5) {
+        if (num == object$board[i,j]) {
+          col &lt;- j
+          found &lt;- TRUE
+        }
+      }
+    }
+  }
+  if (found) {
+    object$hits[row,col] &lt;- 1
+  }
+  
+  return(object)
+}
+
+check.Board &lt;- function(object) {
+  bingo &lt;- FALSE
+  # check rows
+  if (any(rowSums(object$hits) == 5)) {
+    bingo &lt;- TRUE
+  } else if (any(colSums(object$hits) == 5)) {
+    bingo &lt;- TRUE
+  }
+  return(bingo)
+}
+
+score.Board &lt;- function(object, num) {
+  # sum unmarked numbers and multiply by last pulled number
+  object$score &lt;- num * sum(object$board[object$hits == 0])
+  return(object)
+}
+
+draw.Board &lt;- function(object, num) {
+  object &lt;- mark(object, num)
+  bingo &lt;- check(object)
+  if (bingo) {
+    object &lt;- score(object, num)
+  }
+  return(object)
+}</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYWxsX2JvYXJkcyA8LSBCXG53aW5uZXIgPC0gRkFMU0VcbmZvciAoaWkgaW4gMTpucm93KGRyYXdzKSkge1xuICBwdWxsIDwtIGRyYXdzW2lpLDJdXG4gIGZvciAoYmkgaW4gMTpuX2JvYXJkKSB7XG4gICAgYmQgPC0gZHJhdyhhbGxfYm9hcmRzW1tiaV1dLCBwdWxsKVxuICAgIGlmIChiZCRzY29yZSA+IDApIHtcbiAgICAgIHByaW50KHN0cl9jKCdCb2FyZCAnLCBiZCRiaWQsICcgd29uISBQdWxsICcsIHB1bGwsICcsIHNjb3JlID0gJywgYmQkc2NvcmUpKVxuICAgICAgd2lubmVyIDwtIFRSVUVcbiAgICB9XG4gICAgYWxsX2JvYXJkc1tbYmldXSA8LSBiZFxuICB9XG4gIGlmICh3aW5uZXIpIGJyZWFrXG59XG5gYGAifQ== -->
+<pre class="r"><code>all_boards &lt;- B
+winner &lt;- FALSE
+for (ii in 1:nrow(draws)) {
+  pull &lt;- draws[ii,2]
+  for (bi in 1:n_board) {
+    bd &lt;- draw(all_boards[[bi]], pull)
+    if (bd$score &gt; 0) {
+      print(str_c('Board ', bd$bid, ' won! Pull ', pull, ', score = ', bd$score))
+      winner &lt;- TRUE
+    }
+    all_boards[[bi]] &lt;- bd
+  }
+  if (winner) break
+}</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <div id="part-2-which-board-wins-last" class="section level2">
 <h2>Part 2: which board wins last?</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud2lubmluZ19wdWxsIDwtIHJlcCgwLCBuX2JvYXJkKVxud2lubmluZ19zY29yZSA8LSByZXAoMCwgbl9ib2FyZClcbmFsbF9ib2FyZHMgPC0gQlxuXG5mb3IgKGlpIGluIDE6bnJvdyhkcmF3cykpIHtcbiAgcHVsbCA8LSBkcmF3c1tpaSwyXVxuICBmb3IgKGJpIGluIDE6bl9ib2FyZCkge1xuICAgIGlmICh3aW5uaW5nX3B1bGxbYmldID4gMCkge1xuICAgICAgIyBza2lwIGlmIGJvYXJkIGFscmVhZHkgc2NvcmVkXG4gICAgfSBlbHNlIHtcbiAgICAgIGJkIDwtIGRyYXcoYWxsX2JvYXJkc1tbYmldXSwgcHVsbClcbiAgICAgIGlmIChiZCRzY29yZSA+IDApIHtcbiAgICAgICAgd2lubmluZ19wdWxsW1tiaV1dIDwtIGlpXG4gICAgICAgIHdpbm5pbmdfc2NvcmVbW2JpXV0gPC0gYmQkc2NvcmVcbiAgICAgIH1cbiAgICAgIGFsbF9ib2FyZHNbW2JpXV0gPC0gYmRcbiAgICB9XG4gIH1cbn1cbmBgYCJ9 -->
+<pre class="r"><code>winning_pull &lt;- rep(0, n_board)
+winning_score &lt;- rep(0, n_board)
+all_boards &lt;- B
+
+for (ii in 1:nrow(draws)) {
+  pull &lt;- draws[ii,2]
+  for (bi in 1:n_board) {
+    if (winning_pull[bi] &gt; 0) {
+      # skip if board already scored
+    } else {
+      bd &lt;- draw(all_boards[[bi]], pull)
+      if (bd$score &gt; 0) {
+        winning_pull[[bi]] &lt;- ii
+        winning_score[[bi]] &lt;- bd$score
+      }
+      all_boards[[bi]] &lt;- bd
+    }
+  }
+}</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucmVzdWx0cyA8LSB0aWJibGUoXG4gIHB1bGwgPSB3aW5uaW5nX3B1bGwsXG4gIHNjb3JlID0gd2lubmluZ19zY29yZVxuKVxucmVzdWx0cyAlPiVcbiAgZmlsdGVyKHB1bGwgPT0gbWF4KHdpbm5pbmdfcHVsbCkpICU+JVxuICBwdWxsKHNjb3JlKVxuYGBgIn0= -->
+<pre class="r"><code>results &lt;- tibble(
+  pull = winning_pull,
+  score = winning_score
+)
+results %&gt;%
+  filter(pull == max(winning_pull)) %&gt;%
+  pull(score)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -1876,6 +2210,23 @@ summary {
 #assign(&quot;last.warning&quot;, NULL, envir = baseenv())
 library(tidyverse)</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiUmVnaXN0ZXJlZCBTMyBtZXRob2Qgb3ZlcndyaXR0ZW4gYnkgJ2RwbHlyJzpcbiAgbWV0aG9kICAgICAgICAgICBmcm9tXG4gIHByaW50LnJvd3dpc2VfZGYgICAgIFxuUmVnaXN0ZXJlZCBTMyBtZXRob2RzIG92ZXJ3cml0dGVuIGJ5ICdkYnBseXInOlxuICBtZXRob2QgICAgICAgICBmcm9tXG4gIHByaW50LnRibF9sYXp5ICAgICBcbiAgcHJpbnQudGJsX3NxbCAgICAgIFxuXHUwMDFiWzM3beKUgOKUgCBcdTAwMWJbMW1BdHRhY2hpbmcgcGFja2FnZXNcdTAwMWJbMjJtIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgCB0aWR5dmVyc2UgMS4zLjAg4pSA4pSAXHUwMDFiWzM5bVxuXHUwMDFiWzM3bVx1MDAxYlszMm3inJNcdTAwMWJbMzdtIFx1MDAxYlszNG1nZ3Bsb3QyXHUwMDFiWzM3bSAzLjMuMyAgICAgXHUwMDFiWzMybeKck1x1MDAxYlszN20gXHUwMDFiWzM0bXB1cnJyICBcdTAwMWJbMzdtIDAuMy4zXG5cdTAwMWJbMzJt4pyTXHUwMDFiWzM3bSBcdTAwMWJbMzRtdGliYmxlIFx1MDAxYlszN20gMy4xLjIgICAgIFx1MDAxYlszMm3inJNcdTAwMWJbMzdtIFx1MDAxYlszNG1kcGx5ciAgXHUwMDFiWzM3bSAwLjguM1xuXHUwMDFiWzMybeKck1x1MDAxYlszN20gXHUwMDFiWzM0bXRpZHlyICBcdTAwMWJbMzdtIDEuMC4wICAgICBcdTAwMWJbMzJt4pyTXHUwMDFiWzM3bSBcdTAwMWJbMzRtc3RyaW5nclx1MDAxYlszN20gMS40LjBcblx1MDAxYlszMm3inJNcdTAwMWJbMzdtIFx1MDAxYlszNG1yZWFkciAgXHUwMDFiWzM3bSAxLjMuMSAgICAgXHUwMDFiWzMybeKck1x1MDAxYlszN20gXHUwMDFiWzM0bWZvcmNhdHNcdTAwMWJbMzdtIDAuNC4wXHUwMDFiWzM5bVxucGFja2FnZSDigJhnZ3Bsb3Qy4oCZIHdhcyBidWlsdCB1bmRlciBSIHZlcnNpb24gMy42LjJwYWNrYWdlIOKAmHRpYmJsZeKAmSB3YXMgYnVpbHQgdW5kZXIgUiB2ZXJzaW9uIDMuNi4yXHUwMDFiWzM3beKUgOKUgCBcdTAwMWJbMW1Db25mbGljdHNcdTAwMWJbMjJtIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgCB0aWR5dmVyc2VfY29uZmxpY3RzKCkg4pSA4pSAXG5cdTAwMWJbMzFteFx1MDAxYlszN20gXHUwMDFiWzM0bWRwbHlyXHUwMDFiWzM3bTo6XHUwMDFiWzMybWZpbHRlcigpXHUwMDFiWzM3bSBtYXNrcyBcdTAwMWJbMzRtc3RhdHNcdTAwMWJbMzdtOjpmaWx0ZXIoKVxuXHUwMDFiWzMxbXhcdTAwMWJbMzdtIFx1MDAxYlszNG1kcGx5clx1MDAxYlszN206Olx1MDAxYlszMm1sYWcoKVx1MDAxYlszN20gICAgbWFza3MgXHUwMDFiWzM0bXN0YXRzXHUwMDFiWzM3bTo6bGFnKClcdTAwMWJbMzltXG4ifQ== -->
+<pre><code>Registered S3 method overwritten by 'dplyr':
+  method           from
+  print.rowwise_df     
+Registered S3 methods overwritten by 'dbplyr':
+  method         from
+  print.tbl_lazy     
+  print.tbl_sql      
+[37m── [1mAttaching packages[22m ─────────────────────────────────────── tidyverse 1.3.0 ──[39m
+[37m[32m✓[37m [34mggplot2[37m 3.3.3     [32m✓[37m [34mpurrr  [37m 0.3.3
+[32m✓[37m [34mtibble [37m 3.1.2     [32m✓[37m [34mdplyr  [37m 0.8.3
+[32m✓[37m [34mtidyr  [37m 1.0.0     [32m✓[37m [34mstringr[37m 1.4.0
+[32m✓[37m [34mreadr  [37m 1.3.1     [32m✓[37m [34mforcats[37m 0.4.0[39m
+package ‘ggplot2’ was built under R version 3.6.2package ‘tibble’ was built under R version 3.6.2[37m── [1mConflicts[22m ────────────────────────────────────────── tidyverse_conflicts() ──
+[31mx[37m [34mdplyr[37m::[32mfilter()[37m masks [34mstats[37m::filter()
+[31mx[37m [34mdplyr[37m::[32mlag()[37m    masks [34mstats[37m::lag()[39m</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
@@ -1891,7 +2242,7 @@ d &lt;- d %&gt;%
          x2 = as.numeric(x2))
 d %&gt;% head()</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibmNvbCI6NCwibnJvdyI6Nn0sInJkZiI6Ikg0c0lBQUFBQUFBQUExMVF1MDZFUUJTOURMQm1NYTRtTm42Q0RVUjNMU3dwakxFMm1teUxMQ3FLQXdJYklUWjJtbXl5MmNiQ3p0N1NIekR4Qi93R1A4Tmk4UXpEWUdTU08rZmM5K1A0WUR5eXhoWVI2YVQzOEp1Z1pKNmVITnI3UkFhRG9wRkJmWUVGM0pzZ0JtUU5nbkR0QmZnTWZBZnVBZDhRc3dvK0VINTM1b3BxNUpZZkVtOFhFcTlJWXRMb2o5dlVQSmxYTHY3SDMrOUluQjlKbkwxS2ZCcXJ2R1llL1JNemJFRkVoeThnQm1mZm5VVk03dDBFR2NoR3ZZdzBzbUpYc2JKbHhiQzFEVHRGK21sODU2aENvanQ3d0ZkVjFVKzNteDk1bWVxbWpOYkV5ejNuUEVVK3RHVW5aU1ZPOGpEbVNHTGkzbVluV1VzN2h2VXBGNU5NYlA5eXlxL3RrV2hRdS85dW84bjd0TnlRTFZuVmxES2JVcjJBWDRROFVMTkgzbGtRTmNvQUc5Y0xPMGthOGx4dEFtdm01SEh1cVRqTGp5TmxxWGVqNVM4cFNuc2VaZ0lBQUE9PSJ9 -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibmNvbCI6NCwibnJvdyI6Nn0sInJkZiI6Ikg0c0lBQUFBQUFBQUExMVF1MDZFUUJTOXZOWXN4dFhFeGsrd2dTaGFXRklZWTIwMG9SMVoxRlVjRU5nSXNiSFRaQk96allXZHZhVS9ZT0lQK0ExK2hzWGlHWWJCeUNSM3pybnZ4OUYrc0dNSE5oRVpaQXp3VzZCa25Sd2ZPSHRFcGc1Rkk1T0dBa3U0MTBGTXlBb0U0ZG9MOEJuNER0d0Z2aUZtR1h3ay9QN01GOVhJcno0azNzd2xYcExFdE5VZk5xbDlNcSthLzQrLzI1TDRkQ2h4OWlyeE1WQjU3VHpHSjJiWWdJZ09YMEFNcm4vM0ZyRTR1NDV5a0xWbUdXblV5MjNGcW82VlhtZnpla1dHV1hMcnFrS2l1MzZQcjY3cm4zNjNNR2E1NnFhTTlwZ1Z6RDNMa0E5dDBVdFpTdEppa25BazZlTGVWaTlaeTNxRzFTa1hrNHlkOEdMS3J4eFBOR2pjZjdmUjVIMDZic3FXZXQyV3N0cFNnNGlmVDNpa1pvL1phUlMzeWdnYk53dTdhVGJoaGRvRTF0d3Rrb0twT0R0TVltVnBkcVBGTHd0b0pYMW1BZ0FBIn0= -->
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["x1"],"name":[1],"type":["int"],"align":["right"]},{"label":["y1"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["x2"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["y2"],"name":[4],"type":["int"],"align":["right"]}],"data":[{"1":"409","2":"872","3":"409","4":"963"},{"1":"149","2":"412","3":"281","4":"280"},{"1":"435","2":"281","3":"435","4":"362"},{"1":"52","2":"208","3":"969","4":"208"},{"1":"427","2":"265","3":"884","4":"265"},{"1":"779","2":"741","3":"779","4":"738"}],"options":{"columns":{"min":{},"max":[10],"total":[4]},"rows":{"min":[10],"max":[10],"total":[6]},"pages":{}}}
@@ -1919,14 +2270,10 @@ d %&gt;% head()</code></pre>
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudmVudHMgPC0gbWF0cml4KHJlcCgwLDEwMDAqMTAwMCksIG5yb3c9MTAwMClcbmBgYCJ9 -->
-<pre class="r"><code>vents &lt;- matrix(rep(0,1000*1000), nrow=1000)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiVGhlcmUgd2VyZSA1MCBvciBtb3JlIHdhcm5pbmdzICh1c2Ugd2FybmluZ3MoKSB0byBzZWUgdGhlIGZpcnN0IDUwKVxuIn0= -->
-<pre><code>There were 50 or more warnings (use warnings() to see the first 50)</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaF9saW5lcyA8LSBkICU+JVxuICBmaWx0ZXIoeDEgPT0geDIpXG52X2xpbmVzIDwtIGQgJT4lXG4gIGZpbHRlcih5MSA9PSB5MilcblxuZm9yIChpIGluIDE6bnJvdyhoX2xpbmVzKSkge1xuICB4IDwtIGhfbGluZXNbW2ksMV1dXG4gIHlfcmFuZ2UgPC0gYyhoX2xpbmVzW1tpLDJdXTpoX2xpbmVzW1tpLDRdXSlcbiAgdmVudHNbeCwgeV9yYW5nZV0gPC0gdmVudHNbeCwgeV9yYW5nZV0gKyAxXG59XG5cbmZvciAoaSBpbiAxOm5yb3codl9saW5lcykpIHtcbiAgeSA8LSB2X2xpbmVzW1tpLDJdXVxuICB4X3JhbmdlIDwtIGModl9saW5lc1tbaSwxXV06dl9saW5lc1tbaSwzXV0pXG4gIHZlbnRzW3hfcmFuZ2UsIHldIDwtIHZlbnRzW3hfcmFuZ2UsIHldICsgMVxufVxuYGBgIn0= -->
-<pre class="r"><code>h_lines &lt;- d %&gt;%
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudmVudHMgPC0gbWF0cml4KHJlcCgwLDEwMDAqMTAwMCksIG5yb3c9MTAwMClcblxuaF9saW5lcyA8LSBkICU+JVxuICBmaWx0ZXIoeDEgPT0geDIpXG52X2xpbmVzIDwtIGQgJT4lXG4gIGZpbHRlcih5MSA9PSB5MilcblxuZm9yIChpIGluIDE6bnJvdyhoX2xpbmVzKSkge1xuICB4IDwtIGhfbGluZXNbW2ksMV1dXG4gIHlfcmFuZ2UgPC0gYyhoX2xpbmVzW1tpLDJdXTpoX2xpbmVzW1tpLDRdXSlcbiAgdmVudHNbeCwgeV9yYW5nZV0gPC0gdmVudHNbeCwgeV9yYW5nZV0gKyAxXG59XG5cbmZvciAoaSBpbiAxOm5yb3codl9saW5lcykpIHtcbiAgeSA8LSB2X2xpbmVzW1tpLDJdXVxuICB4X3JhbmdlIDwtIGModl9saW5lc1tbaSwxXV06dl9saW5lc1tbaSwzXV0pXG4gIHZlbnRzW3hfcmFuZ2UsIHldIDwtIHZlbnRzW3hfcmFuZ2UsIHldICsgMVxufVxuYGBgIn0= -->
+<pre class="r"><code>vents &lt;- matrix(rep(0,1000*1000), nrow=1000)
+
+h_lines &lt;- d %&gt;%
   filter(x1 == x2)
 v_lines &lt;- d %&gt;%
   filter(y1 == y2)
