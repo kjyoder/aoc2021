@@ -538,4 +538,4 @@ for (i in 1:256) {
 }
 sum(c)
 ```
-
+# Day 7: Treachery of Whales
