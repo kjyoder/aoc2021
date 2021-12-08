@@ -539,3 +539,292 @@ for (i in 1:256) {
 sum(c)
 ```
 # Day 7: Treachery of Whales
+
+# Day 8: Seven Segment Search
+```{r}
+require(tidyverse)
+d <- read_delim('data/aoc-8.txt', delim=' ',
+                col_names = c(str_c('V', 1:10),
+                              'null',str_c('N',1:4)))
+d <- d %>%
+  select(-null)
+d %>% head()
+```
+The lights are correct, but the labels are wrong.
+* `1` is the only number with just 2 segments
+* `7` is the only number with exactly 3 segments
+* `4` is the only number with exactly 4 segments
+* `8` is the only number with all 7 segments
+```{r}
+output <- d %>%
+  select(starts_with('N')) %>%
+  mutate_all(nchar)
+output %>% head()
+```
+
+```{r}
+output %>%
+  mutate_all(funs(case_when(
+    . %in% c(2, 3, 4, 7) ~ 1,
+    TRUE ~ 0
+  ))) %>%
+  colSums() %>%
+  sum()
+```
+## Part 2: decode all values
+For sanity, the "correct" labeling of seven segments will be called:
+ AAAA
+B    C
+B    C
+ DDDD
+E    F
+E    F
+ GGGG
+ 
+If we only have the number of segments, there are some duplicates
+2: `1`
+3: `7`
+4: `4`
+5: `2`, `3`, `5`
+6: `0`, `6`, `9`
+7: `8`
+
+
+* `3` is the number with 5 segments that has three matches with `7`
+* AA can be identified as the segment in `7` that is not in `1`
+* CC is the segment in `1` that occurs in eight segments
+* FF is the segment in `1` that occurs in nine segments
+* `5` is the number with 5 segments that contains FF but not CC
+* `2` is the number with 5 segments that contains CC but not FF
+* BB is the remaining segment in `4` that occurs in six segments
+* DD is the remaining segment in `4` that occurs in seven segments
+* `0` is the number of six segments that does not contain DD
+* `9` is the remaining number with six segments that matches all three segments in `7` 
+* `6` is the last six segment number
+
+```{r}
+# You know what, R doesn't have a good function for finding
+# matching and non-matching characters between strings.
+# Let's write some
+get_matching <- function(x, target) {
+  nx = nchar(x)
+  nt = nchar(target)
+  match = NULL
+  
+  for (ti in 1:nt) {
+    tchar = substr(target, ti, ti)
+    for (xi in 1:nx) {
+      if (substr(x,xi,xi) == tchar) {
+        match <- c(match, substr(x,xi,xi))
+      }
+    }
+  }
+  return(paste(match, sep='', collapse=''))
+}
+
+get_nonmatching <- function(x, target) {
+  nx = nchar(x)
+  nt = nchar(target)
+  nomatch = NULL
+  # check each char in x, if not in target, save
+  for (xi in 1:nx) {
+    xchar = substr(x, xi, xi)
+    match = FALSE
+    for (ti in 1:nt) {
+      if (substr(target,ti,ti) == xchar) {
+        match = TRUE
+      }
+    }
+    if (!match) {
+      nomatch <- c(nomatch, xchar)
+    }
+  }
+  return(paste(nomatch, sep='', collapse=''))
+  
+}
+
+alphabetize <- function(x) {
+  n <- nchar(x)
+  vals = substr(x,1,1)
+  for (ii in 2:n) {
+    vals <- c(vals, substr(x,ii,ii))
+  }
+  
+  return(paste(sort(vals), sep='', collapse=''))
+}
+
+
+# write a function to score a single row
+decode_row <- function(x) {
+    
+  # keep track of wire-path mappings
+  wire_map <- tibble(A="", B="", C="",
+                     D="", E="", F="",
+                     G="")
+  
+  signals <- x %>% 
+    select(starts_with('V')) %>%
+    pivot_longer(everything(), values_to = 'wires') %>%
+    rowwise() %>%
+    mutate(wires = alphabetize(wires)) %>%
+    ungroup() %>% 
+    mutate(n = nchar(wires)) %>%
+    mutate(Number = case_when(
+      n == 2 ~ "1",
+      n == 3 ~ "7",
+      n == 4 ~ "4",
+      n == 7 ~ "8",
+      TRUE ~ NA_character_
+    ))
+  
+  outputs <- x %>% select(starts_with('N')) %>%
+    pivot_longer(everything(), values_to = 'target') %>% 
+    rowwise() %>%
+    mutate(target = alphabetize(target)) %>%
+    ungroup() 
+  
+  # get the known numbers
+  s1 <- signals %>% filter(Number == "1")
+  s4 <- signals %>% filter(Number == "4")
+  s7 <- signals %>% filter(Number == "7")
+  s8 <- signals %>% filter(Number == "8")
+  
+  # Find 3, 5 segments with exactly three matching 7
+  n5 <- signals %>% 
+    filter(n == 5) %>%
+    rowwise() %>%
+    mutate(match7 = get_matching(wires, s7$wires)) %>%
+    ungroup() %>%
+    mutate(n7 = nchar(match7))
+  s3_wires <- n5 %>%
+    filter(n7 == 3) %>%
+    pull(wires)
+  
+  signals <- signals %>%
+    mutate(Number = case_when(
+      wires == s3_wires ~ "3",
+      TRUE ~ Number
+    ))
+  s3 <- signals %>% filter(Number == "3")
+  
+  # find AA (segment in 7 not in 1)
+  s7 <- s7 %>%
+    rowwise() %>%
+    mutate(match1 = get_matching(wires, s1$wires),
+           nomatch1 = get_nonmatching(wires, s1$wires))
+  wire_map$A <- s7 %>% select(nomatch1) %>% pull()
+  
+  # find CC and FF (segment in 1 occurring 8 or 9 times, respect)
+  match1 <- signals %>%
+    rowwise() %>%
+    mutate(match = get_matching(wires,
+                                substr(s1$wires,1,1))) %>%
+    count(match) %>% filter(! match %in% c("")) %>% pull(n)
+  
+  if (match1 == 8) {
+    wire_map$C <- substr(s1$wires,1,1)
+    wire_map$F <- substr(s1$wires,2,2)
+  } else {
+    wire_map$C <- substr(s1$wires,2,2)
+    wire_map$F <- substr(s1$wires,1,1)
+  }
+
+  # Get 5 and 2
+  # '5' has 5 segments and contains FF but not CC
+  # '2' has 5 segments and contains CC but not FF
+  n5 <- signals %>%
+    filter(n == 5 & is.na(Number)) %>%
+    rowwise() %>%
+    mutate(matchF = get_matching(wires, wire_map$F)) %>%
+    mutate(matchC = get_matching(wires, wire_map$C))
+  w5 <- n5 %>% # get '5' (no c)
+    filter(matchC == "") %>%
+    pull(wires)
+  w2 <- n5 %>% # get '2' (no)
+    filter(matchF == "") %>%
+    pull(wires)
+  
+  signals <- signals %>%
+    mutate(Number = case_when(
+      wires == w5 ~ "5",
+      wires == w2 ~ "2",
+      TRUE ~ Number
+    ))
+  
+  n6 <- signals %>%
+    filter(n == 6) %>%
+    rowwise() %>%
+    mutate(matchC = get_matching(wires, wire_map$C))
+  # get 6, (6 segments, no C)
+  w6 <- n6 %>%
+    filter(matchC == "") %>%
+    pull(wires)
+  signals <- signals %>%
+    mutate(Number = case_when(
+      wires == w6 ~ "6",
+      TRUE ~ Number
+    ))
+  # get 0 and 9
+  # First get e
+  #   in 6 but not 5
+  wire_map$E <- get_nonmatching(
+    signals %>% filter(Number == "6") %>% pull(wires), 
+    signals %>% filter(Number == "5") %>% pull(wires)
+    )
+  # 0 has E
+  # 9 doesn't
+  n6 <- signals %>%
+    filter(n == 6 & is.na(Number)) %>%
+    rowwise() %>%
+    mutate(matchE = get_matching(wires, wire_map$E)) %>%
+    ungroup() %>%
+    mutate(Number = case_when(
+      matchE == "" ~ "9",
+      TRUE ~ "0"
+    )) %>%
+    select(name:Number)
+  w0 <- n6 %>% filter(Number == "0") %>% pull(wires)
+  w9 <- n6 %>% filter(Number == "9") %>% pull(wires)
+  signals <- signals %>%
+    mutate(Number = case_when(
+      wires == w0 ~ "0",
+      wires == w9 ~ "9",
+      TRUE ~ Number
+    ))
+  
+  ss <- signals %>%
+    select(wires, Number) %>%
+    pivot_wider(names_from = wires,
+                values_from = Number)
+  
+  scored <- outputs %>% 
+    rowwise() %>% 
+    mutate(Number = ss[target][[1]]) %>%
+    ungroup() %>%
+    mutate(Score = case_when(
+      name == "N1" ~ as.numeric(Number) * 1000,
+      name == "N2" ~ as.numeric(Number) * 100,
+      name == "N3" ~ as.numeric(Number) * 10,
+      name == "N4" ~ as.numeric(Number)
+    ))
+  
+  Sum <- scored %>% pull(Score) %>% as.integer() %>% sum()
+  
+  return(Sum)
+}
+
+```
+
+Let's add them up.
+```{r}
+vals = 0
+for (i in 1:nrow(d)) {
+  vals <- vals + d[i,] %>% 
+    rowwise() %>% 
+    mutate(Sum = decode_row(.)) %>% 
+    select(Sum) %>% 
+    pull()
+}
+vals
+```
+
