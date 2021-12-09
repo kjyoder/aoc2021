@@ -828,3 +828,85 @@ for (i in 1:nrow(d)) {
 vals
 ```
 
+
+# Day 9: Smoke Basin
+
+Find low points - places where a number is the lowest number of it's neighbors (up, down, left, right)
+```{r}
+require(tidyverse)
+d <- read_csv('data/aoc-9.txt', col_names = 'C',
+              col_types = cols(.default=col_character()))
+d <- d %>% 
+  separate(C, into=str_c('C',c(1:100)),
+           sep=c(1:100)) %>%
+  mutate_all(as.numeric)
+d %>% head(2)
+```
+
+```{r}
+dm <- as.matrix(d)
+dim(dm)
+search <- matrix(rep(0, 100*100), nrow=100)
+```
+
+```{r}
+# compare values to the right
+search_right = dm - cbind(rep(10,100), dm[,1:99])
+# compare values to the left
+search_left = dm - cbind(dm[,2:100], rep(10,100))
+# compare values to the top
+search_up = dm - rbind(rep(10,100), dm[1:99,])
+# compare values below
+search_down = dm - rbind(dm[2:100,], rep(10,100))
+
+low_points <- dm[search_right < 0 & search_left < 0 & search_up < 0 & search_down < 0]
+risk <- sum(low_points + 1)
+risk
+```
+
+## Part 2: basins
+```{r}
+length(low_points)
+```
+
+So there are 237 distinct basins. 
+
+```{r}
+i2rc <- function(x) {
+  row <- x %% 100
+  col <- floor(x/100) + 1
+  return(c('row'=row, 'col'=col))
+}
+
+# 1 = lowpoint, 0 = otherwise, 100x100 matrix
+low_mat <- ifelse(search_right < 0 & search_left < 0 & 
+                    search_up < 0 & search_down < 0, 1, 0)
+
+# list to hold r,c pairs of lowpoints
+low_idx <- vector('list', length=length(low_points))
+
+# just the indices of low points in low_mat
+low_idxs <- which(low_mat == 1)
+for (i in 1:length(low_idxs)) {
+  low_idx[[i]] <- i2rc(low_idxs[i])
+}
+```
+
+Now that we have a list of low-point locations in the array, we can use those for starting points to build up basins.
+```{r}
+# keep track of indices for each basin
+basins <- vector(mode='list', length=length(low_points))
+
+#for (li in 1:length(low_idxs)) {
+#  nodes <- 1
+#  
+#}
+```
+
+Wait, we don't actually care where the lowpoints are, we just want to find basins
+
+```{r}
+ridges <- ifelse(dm > 8, 1, 0)
+valleys <- ifelse(dm < 9, 1, 0)
+```
+
