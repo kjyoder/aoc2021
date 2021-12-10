@@ -949,3 +949,128 @@ big3 <- sort(basins)[(length(basins)-2) : length(basins)]
 big3[1] * big3[2] * big3[3]
 ```
 
+# Day 10
+
+Find lines with syntax errors. The first syntax error then gets scored.
+```{r}
+require(tidyverse)
+d <- read_csv('data/aoc-10.txt', col_names = 'line',
+              col_types = cols(.default=col_character()))
+head(d)
+```
+
+```{r}
+parser <- function(line) {
+  open_tokens <- c('(', '[', '{', '<')
+  close_tokens <- c(')' = '(',
+                    ']' = '[',
+                    '}' = '{',
+                    '>' = '<')
+  
+  if (typeof(line) == 'list') line = line[[1]]
+  
+  characters <- strsplit(line, '')[[1]]
+  parsed <- vector(mode='list', length=length(characters))
+
+  mid <- 0
+  
+  for (i in 1:length(characters)) {
+    c <- characters[i]
+    if (c %in% open_tokens) {
+      mid = mid+1
+      parsed[[mid]] <- c
+    } else {
+      if (close_tokens[c] == parsed[[mid]]) {
+        # match
+        mid = mid-1
+      } else {
+        return(c)
+      }
+    }
+  }
+  
+  # no corrupt characters found
+  if (mid > 0) {
+    # incomplete
+    return("0")
+  } else {
+    return("1")
+  }
+  
+}
+
+
+closer <- function(line) {
+  open_tokens <- c('(', '[', '{', '<')
+  close_tokens <- c(')' = '(',
+                    ']' = '[',
+                    '}' = '{',
+                    '>' = '<')
+  closer_token <- c('(' = ')',
+                    '[' = ']',
+                    '{' = '}',
+                    '<' = '>')
+  closer_score <- c(')' = 1,
+                    ']' = 2,
+                    '}' = 3,
+                    '>' = 4)
+                    
+    # ): 1 point.
+    # ]: 2 points.
+    # }: 3 points.
+    # >: 4 points.
+  
+  if (typeof(line) == 'list') line = line[[1]]
+  
+  characters <- strsplit(line, '')[[1]]
+  parsed <- vector(mode='list', length=length(characters))
+
+  mid <- 0
+  
+  for (i in 1:length(characters)) {
+    c <- characters[i]
+    if (c %in% open_tokens) {
+      mid = mid+1
+      parsed[[mid]] <- c
+    } else {
+      if (close_tokens[c] == parsed[[mid]]) {
+        # match
+        mid = mid-1
+      }
+    }
+  }
+  
+  score <- 0
+  for (ii in mid:1) {
+    c <- parsed[[mid]]
+    score <- score * 5
+    # ): 1 point.
+    # ]: 2 points.
+    # }: 3 points.
+    # >: 4 points.
+    
+  }
+  
+}
+```
+
+* `)`: 3 points.
+* `]`: 57 points.
+* `}`: 1197 points.
+* `>`: 25137 points.
+
+```{r}
+d %>% 
+  rowwise() %>% 
+  mutate(scores = parser(line)) %>% 
+  mutate(score = case_when(
+    scores == ')' ~ 3,
+    scores == ']' ~ 57,
+    scores == '}' ~ 1197,
+    scores == '>' ~ 25137,
+    TRUE ~ NA_real_
+  )) %>%
+  select(score) %>%
+  sum(na.rm=TRUE)
+```
+
