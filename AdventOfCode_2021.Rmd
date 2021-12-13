@@ -1000,6 +1000,30 @@ parser <- function(line) {
 }
 
 
+```
+
+* `)`: 3 points.
+* `]`: 57 points.
+* `}`: 1197 points.
+* `>`: 25137 points.
+
+```{r}
+d %>% 
+  rowwise() %>% 
+  mutate(scores = parser(line)) %>% 
+  mutate(score = case_when(
+    scores == ')' ~ 3,
+    scores == ']' ~ 57,
+    scores == '}' ~ 1197,
+    scores == '>' ~ 25137,
+    TRUE ~ NA_real_
+  )) %>%
+  select(score) %>%
+  sum(na.rm=TRUE)
+```
+
+## Part 2:
+```{r}
 closer <- function(line) {
   open_tokens <- c('(', '[', '{', '<')
   close_tokens <- c(')' = '(',
@@ -1035,6 +1059,7 @@ closer <- function(line) {
     } else {
       if (close_tokens[c] == parsed[[mid]]) {
         # match
+        parsed[[mid]] <- NULL
         mid = mid-1
       }
     }
@@ -1042,35 +1067,154 @@ closer <- function(line) {
   
   score <- 0
   for (ii in mid:1) {
-    c <- parsed[[mid]]
+    c <- parsed[[ii]]
     score <- score * 5
+    # get closer token
+    score <- score + closer_score[closer_token[c]]
+    
     # ): 1 point.
     # ]: 2 points.
     # }: 3 points.
     # >: 4 points.
     
   }
-  
+  return(score)
 }
 ```
 
-* `)`: 3 points.
-* `]`: 57 points.
-* `}`: 1197 points.
-* `>`: 25137 points.
+```{r}
+scores <- d %>% 
+  rowwise() %>% 
+  mutate(parsed = parser(line)) %>% 
+  filter(parsed == 0) %>% 
+  mutate(score = closer(line)) %>%
+  ungroup() %>%
+  select(score) %>%
+  arrange(score) %>%
+  pull()
+
+scores[ceiling(length(scores)/2)]
+```
+
+# Day 11: Dumbo Octopus
+
+Octopi have power levels from 0 to 9.
+
+Step 1a: energy level of each octopus increases by 1
+Step 1b: every octopus at > 9 flashes
+Step 1c: every octopus that was exposed to a flash (4d) increases
+Step 1d: every octopus > 9 flashes
+Step 1e: every octopus that flashed resets to 0
+
+Rule: An octopus can never flash more than once per step
+```{r}
+require(tidyverse)
+d <- read_csv('data/aoc-11.txt', col_names='oct',
+              col_types=cols(.default=col_character()))
+d2 <- read_csv('data/aoc-11_sample.txt', col_names='oct',
+              col_types=cols(.default=col_character()))
+d %>% head()
+```
 
 ```{r}
-d %>% 
-  rowwise() %>% 
-  mutate(scores = parser(line)) %>% 
-  mutate(score = case_when(
-    scores == ')' ~ 3,
-    scores == ']' ~ 57,
-    scores == '}' ~ 1197,
-    scores == '>' ~ 25137,
-    TRUE ~ NA_real_
-  )) %>%
-  select(score) %>%
-  sum(na.rm=TRUE)
+dm <- d %>% 
+  separate(oct, str_c('0', 1:10), sep=1:10) %>%
+  mutate_all(as.numeric) %>%
+  as.matrix()
+dm
+
+dm2 <- d2 %>% 
+  separate(oct, str_c('0', 1:10), sep=1:10) %>%
+  mutate_all(as.numeric) %>%
+  as.matrix()
 ```
+
+```{r}
+#
+push_flash <- function(mat, id) {
+  # convert to row and column
+  frow <- id %% nrow(mat)
+  fcol <- ceiling(id / nrow(mat))
+  
+  # increment surrounding octopi
+  frows <- c(frow-1, frow, frow+1)
+  fcols <- c(fcol-1, fcol, fcol+1)
+  
+  for (r in frows) {
+    if (r > 0 & r <= nrow(mat)) {
+      for (c in fcols) {
+        if (c > 0 & c <= ncol(mat)) {
+          if (mat[r,c] > 0) {
+            mat[r,c] <- mat[r,c] + 1
+          }
+        }
+      }
+    }
+  }
+  return(mat)
+}
+
+check_flash <- function(mat, flashes=0, flashed=0) {
+  
+  # find octopi that will flash
+  flashing <- which(mat > 9)
+  
+  # if no flashes, return
+  if (length(flashing) == 0) {
+    out <- list('mat'=mat, 'flashes'=flashes)
+    return(out)
+  }
+  
+  flashed <- append(flashed, flashing)
+  flashes <- flashes + length(flashing)
+  
+  for (fid in flashing) {
+    mat <- push_flash(mat, fid)
+  }
+  
+  # reset flashed octopi
+  mat[flashing] <- 0
+  
+  # check for any more
+  flash2 <- which(mat > 9)
+  
+  if (length(flash2)==0) {
+    flashes <- flashes + length(flash2)
+    out <- list('mat'=mat, 'flashes'=flashes)
+    return(out)
+  } else {
+    mask <- flashing
+    new <- check_flash(mat, flashes=flashes)
+    new$mat[mask] <- 0
+    return(new)
+  }
+}
+
+step_mat <- function(mat, flashes=0) {
+  mat <- mat + 1
+  res <- check_flash(mat, flashes)
+  return(res)
+}
+
+step_multiple <- function(mat, flashes=0, steps=1) {
+  
+  for (step in 1:steps) {
+    res <- step_mat(mat, flashes)
+    mat <- res$mat
+    flashes <- res$flashes
+    # print(str_c('After step ', step,
+    #             ' there were ', flashes,
+    #             ' flashes.'))
+  }
+  
+  out <- list('mat'=mat, 'flashes'=flashes, 'steps'=steps)
+  return(out)
+}
+```
+
+```{r}
+out <- step_multiple(dm, steps=100)
+out$flashes
+```
+
 
