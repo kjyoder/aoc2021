@@ -1255,4 +1255,109 @@ find_sync <- function(mat, steps) {
 ```{r}
 o <- find_sync(dm, steps=1e4)
 ```
+# Day 12: Passage Pathing
+We have a list of paths, and need to determine all paths from `start` to `end`.
+
+There are two types of caves. Large caves have CAPITAL letters, and small caves of lowercase letters. We only want to visit small caves once, but can visit large caves any number of times.
+
+```{r}
+require(tidyverse)
+d_raw <- read_csv('data/aoc-12.txt', col_names='path')
+d_raw %>% head()
+```
+
+```{r}
+d <- d_raw %>%
+  separate(path, into=c('s', 'e')) %>%
+  mutate(start = case_when(
+    str_detect('start', e) ~ e,
+    str_detect('end', s) ~ e,
+    TRUE ~ s
+  )) %>%
+  mutate(end = case_when(
+    start == s ~ e,
+    TRUE ~ s
+  )) %>% 
+  select(start, end)
+d %>% head()
+```
+
+```{r}
+nodes <- append(d$start, d$end)
+nodes <- nodes[! nodes %in% c('start', 'end')]
+nodes <- unique(nodes)
+
+is_upper <- function(x) {
+  return(!is.na(str_match(x, "^[A-Z]+$")))
+}
+
+# return all children of the given parent
+get_children <- function(d, parent) {
+  children <- d %>%
+    filter(start %in% parent | end %in% parent) %>%
+    mutate(out = case_when(
+      start == parent ~ end, 
+      TRUE ~ start)) %>%
+    select(out) %>% pull()
+  return(children)
+}
+
+# determine if node is a valid addition to path
+check_child <- function(path, node) {
+  if (node == 'end')
+    return(TRUE)
+  if (node %>% is_upper()) 
+    return(TRUE)
+  else
+    if (! node %in% path)
+      return(TRUE)
+  return(FALSE)
+}
+
+add_children <- function(d, paths) {
+  nid <- max(sapply(paths, length))
+  
+  for (pid in 1:length(paths)) {
+    p <- paths[[pid]]
+    if (p[length(p)] == 'end') {
+      # great
+    } else {
+      children <- get_children(d, p[length(p)])
+      for (c in children) {
+        if (check_child(p, c)) {
+          paths[[length(paths)+1]] <- append(p, c)
+        }
+      }
+    }
+  }
+  # remove any paths that are too short
+  bad_paths <- NULL
+  for (ii in 1:length(paths)) {
+    p <- paths[[ii]]
+    if (length(p) <= nid) {
+      if ( p[length(p)] != 'end') {
+        bad_paths <- append(bad_paths, ii)
+      }
+    }
+  }
+  if (!is.null(bad_paths)) {
+    paths <- paths[-bad_paths]
+  }
+  return(paths)
+}
+```
+
+```{r}
+# initialize
+paths <- add_children(d, list('start'))
+
+# find all paths
+while (any(!sapply(paths, function(x) x[length(x)] == 'end'))) {
+  paths <- add_children(d, paths)
+}
+
+length(paths)
+```
+
+
 
