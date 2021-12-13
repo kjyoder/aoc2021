@@ -1130,64 +1130,78 @@ dm2 <- d2 %>%
 ```
 
 ```{r}
-#
-push_flash <- function(mat, id) {
+push_flash <- function(mat, target, flashed=NULL) {
+  #print(str_c('incrementing ', target))
   # convert to row and column
-  frow <- id %% nrow(mat)
-  fcol <- ceiling(id / nrow(mat))
-  
-  # increment surrounding octopi
-  frows <- c(frow-1, frow, frow+1)
-  fcols <- c(fcol-1, fcol, fcol+1)
-  
-  for (r in frows) {
-    if (r > 0 & r <= nrow(mat)) {
-      for (c in fcols) {
-        if (c > 0 & c <= ncol(mat)) {
-          if (mat[r,c] > 0) {
-            mat[r,c] <- mat[r,c] + 1
-          }
-        }
-      }
-    }
+  r <- target %% nrow(mat)
+  if (r == 0) {
+    r <- nrow(mat)
   }
+  c <- ceiling(target / nrow(mat))
+  
+  inc <- tibble(
+    rows = rep(c(r-1, r, r+1), 3),
+    cols = rep(c(c-1, c, c+1), each=3)
+  ) %>%
+    filter(rows > 0 & rows <= nrow(mat)) %>%
+    filter(cols > 0 & cols <= ncol(mat)) %>%
+    filter(! (rows == r & cols == c ) ) %>%
+    mutate(to_flash = rows + (cols-1)*nrow(mat)) %>%
+    filter(! to_flash %in% flashed)
+  
+  to_flash <- inc$to_flash
+  
+  for (i in to_flash) {
+    mat[i] <- mat[i]+ 1
+  }
+  
   return(mat)
 }
 
-check_flash <- function(mat, flashes=0, flashed=0) {
+check_flash <- function(mat, flashes=0, flashed=NULL) {
   
   # find octopi that will flash
   flashing <- which(mat > 9)
   
   # if no flashes, return
   if (length(flashing) == 0) {
-    out <- list('mat'=mat, 'flashes'=flashes)
+    out <- list('mat'=mat, 'flashes'=flashes, 'flashed'=flashed)
     return(out)
   }
   
-  flashed <- append(flashed, flashing)
+  # keep track of the number of octopi that have flashed ever
   flashes <- flashes + length(flashing)
   
+  # flash octopi that are above 9
   for (fid in flashing) {
-    mat <- push_flash(mat, fid)
+    #print(str_c('flashing ', fid))
+    #m0 <- mat
+    mat <- push_flash(mat, fid, flashed)
+    #print(mat - m0)
+    #print(mat)
   }
   
-  # reset flashed octopi
-  mat[flashing] <- 0
+  # update flashed
+  flashed <- append(flashed, flashing)
+  mat[flashed] <- 0
   
-  # check for any more
-  flash2 <- which(mat > 9)
+  if (length(which(mat > 9)) > 0) {
+    #print('Cascading...')
+    # flash any octopi that are now above 9
+    res <- check_flash(mat, flashes, flashed)
   
-  if (length(flash2)==0) {
-    flashes <- flashes + length(flash2)
-    out <- list('mat'=mat, 'flashes'=flashes)
-    return(out)
+    # reset all flashed octopi this step
+    res$mat[flashed] <- 0
+    out <- list('mat'=res$mat, 
+                'flashes'=res$flashes, 
+                'flashed'=res$flashed)
   } else {
-    mask <- flashing
-    new <- check_flash(mat, flashes=flashes)
-    new$mat[mask] <- 0
-    return(new)
+    out <- list('mat'=mat, 
+                'flashes'=flashes, 
+                'flashed'=flashed)
   }
+  
+  return(out)
 }
 
 step_mat <- function(mat, flashes=0) {
@@ -1196,7 +1210,7 @@ step_mat <- function(mat, flashes=0) {
   return(res)
 }
 
-step_multiple <- function(mat, flashes=0, steps=1) {
+step_multiple <- function(mat, steps=1, flashes=0) {
   
   for (step in 1:steps) {
     res <- step_mat(mat, flashes)
@@ -1217,4 +1231,28 @@ out <- step_multiple(dm, steps=100)
 out$flashes
 ```
 
+
+## Part 2: when synchronized?
+```{r}
+find_sync <- function(mat, steps) {
+  for (step in 1:steps) {
+    res <- step_mat(mat, flashes)
+    mat <- res$mat
+    flashes <- res$flashes
+    if (sum(res$mat==0) == nrow(mat)*ncol(mat) ) {
+      print(str_c('First synchronization at step: ', step))
+      out <- list('mat'=mat, 'flashes'=flashes, 'steps'=steps)
+      return(out)
+    }
+  }
+  print(str_c("Couldn't find sync even after ", steps,
+              'steps.'))
+  out <- list('mat'=mat, 'flashes'=flashes, 'steps'=steps)
+  return(out)
+}
+```
+
+```{r}
+o <- find_sync(dm, steps=1e4)
+```
 
