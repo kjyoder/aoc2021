@@ -1359,5 +1359,96 @@ while (any(!sapply(paths, function(x) x[length(x)] == 'end'))) {
 length(paths)
 ```
 
+# Day 13:
+Folding paper
+```{r}
+require(tidyverse)
+d <- read_csv('data/aoc-12_dots.txt', col_names=c('x','y'))
+d %>% head()
+f <- read_delim('data/aoc-12_folds.txt', col_names=c('f','a','fold'),
+                delim=" ")
+folds <- f %>% 
+  separate(fold, into=c('axis', 'value')) %>%
+  select(axis, value) %>%
+  mutate(value = as.numeric(value))
+```
+
+```{r}
+max(d)
+```
+
+```{r}
+fold_sheet <- function(d, fold) {
+  direction <- fold$axis
+  coord <- fold$value
+  
+  if (direction == 'x') {
+    d_folded <- d %>%
+      mutate(x = abs(x-coord))
+  } else {
+    d_folded <- d %>% 
+      mutate(y = abs(y-coord))
+  }
+  return(d_folded)
+}
+```
+
+```{r}
+fold_sheet(d, folds[1,]) %>% 
+  unite('merged', x, y) %>% 
+  filter(!duplicated(select(., merged))) %>%
+  nrow()
+```
+
+## Part 2: Finish folding
+```{r}
+fold_sheet2 <- function(d, fold) {
+  direction <- fold$axis
+  coord <- fold$value
+  
+  if (direction == 'x') {
+    d_folded <- d %>%
+      mutate(x = case_when(
+        x < coord ~ x,
+        x > coord ~ coord - abs(x-coord),
+        TRUE ~ NA_real_
+        ))
+  } else {
+    d_folded <- d %>% 
+      mutate(y = case_when(
+        y < coord ~ y,
+        y > coord ~ coord - abs(y-coord),
+        TRUE ~ NA_real_
+        ))
+  }
+  return(d_folded)
+}
+```
+
+```{r}
+folded <- d
+for (i in 1:nrow(folds)) {
+  folded <- fold_sheet2(folded, folds[i,])
+  folded <- folded %>% 
+    unite(m, x, y, remove=FALSE) %>%
+    filter(!duplicated(select(., m))) %>%
+    select(x, y)
+}
+
+mrow <- max(folded$y)
+mcol <- max(folded$x)
+output <- matrix('.', nrow=mrow, ncol=mcol)
+for (i in 1:nrow(folded)) {
+  coord <- folded[i,]
+  output[coord$y, coord$x] <- '#'
+}
+
+for (i in 1:nrow(output)) {
+  print(toString(output[i,]))
+}
+```
+
+If you squnt, and recognize the top row is missing, then the letters are:
+RPCKFBLR
 
 
