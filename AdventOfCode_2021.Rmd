@@ -1255,6 +1255,7 @@ find_sync <- function(mat, steps) {
 ```{r}
 o <- find_sync(dm, steps=1e4)
 ```
+
 # Day 12: Passage Pathing
 We have a list of paths, and need to determine all paths from `start` to `end`.
 
@@ -1357,6 +1358,93 @@ while (any(!sapply(paths, function(x) x[length(x)] == 'end'))) {
 }
 
 length(paths)
+```
+## Part 2
+Now you can visit a single small cave more than once
+
+```{r}
+# determine if node is a valid addition to path
+check_child2 <- function(path, node) {
+  if (node == 'end')
+    return(TRUE)
+  if (node %>% is_upper()) 
+    return(TRUE)
+  else {
+    # one small cave can be visited twice
+    if (node %in% path) {
+      # determine how many times each small cave has
+      # already been visited
+      small_visits <- path %>% tibble(node = .) %>%
+        mutate(Big = is_upper(node)) %>%
+        filter(! node == 'start') %>%
+        filter(!Big) %>%
+        count(node) %>%
+        select(n) %>%
+        pull() %>%
+        unique()
+      # if no cave has been visited more than once
+      # it's okay to visit this cave again
+      if (length(small_visits) == 1)
+        return(TRUE)
+    } else {
+      # node not visited yet, safe to add
+      return(TRUE)
+    }
+  }
+    
+  return(FALSE)
+}
+
+
+add_children2 <- function(d, paths, n_paths = 0) {
+  nid <- max(sapply(paths, length))
+  
+  new_paths <- 0
+  paths_to_remove <- NULL
+  for (pid in 1:length(paths)) {
+    p <- paths[[pid]]
+    if (p[length(p)] == 'end') {
+      # great, remove the path
+      paths_to_remove <- append(paths_to_remove, pid)
+      new_paths <- new_paths + 1
+    } else {
+      children <- get_children(d, p[length(p)])
+      for (c in children) {
+        if (check_child2(p, c)) {
+          paths[[length(paths)+1]] <- append(p, c)
+        }
+      }
+    }
+  }
+  
+  # remove any paths that are too short
+  for (ii in 1:length(paths)) {
+    p <- paths[[ii]]
+    if (length(p) <= nid) {
+      if ( p[length(p)] != 'end') {
+        paths_to_remove <- append(paths_to_remove, ii)
+      }
+    }
+  }
+  if (!is.null(paths_to_remove)) {
+    paths <- paths[-paths_to_remove]
+  }
+  out <- list('paths'=paths, 'n_paths'=n_paths + new_paths)
+  return(out)
+}
+```
+
+```{r}
+# initialize
+res <- add_children2(d, list('start'))
+
+# find all paths
+while (any(!sapply(paths2, 
+                   function(x) x[length(x)] == 'end'))) {
+  res <- add_children2(d, res$paths, res$n_paths)
+}
+
+res$n_paths
 ```
 
 # Day 13:
