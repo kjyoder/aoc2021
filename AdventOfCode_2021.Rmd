@@ -1546,10 +1546,13 @@ RPCKFBLR
 Based on the starting input, assess each pair of letters (moving window of length 2) and insert the appropriate character based on the rules.
 ```{r}
 require(tidyverse)
-input <- read_csv('data/aoc-14_input.txt', col_names='input')
-input %>% head()
+input <- read_csv('data/aoc-14_input.txt', col_names='input',
+                  show_col_types=FALSE)
+d <- input %>% pull() %>% strsplit("") %>% unlist()
+print(d)
 rules <- read_delim('data/aoc-14_rules.txt', col_names=c('input','void','out'),
-                    col_types = cols(.default=col_character()), delim=' ')
+                    col_types = cols(.default=col_character()),
+                    show_col_types=FALSE, delim=' ')
 rules <- rules %>% select(-void)
 rules %>% head()
 ```
@@ -1563,5 +1566,140 @@ mwin <- function(d, win_length=2) {
   }
   return(out)
 }
+
+apply_rule <- function(probe, rules, last=FALSE) {
+  # merge probe into single string
+  probe_str <- paste0(probe, collapse='')
+  insert <- rules %>%
+    filter(input == probe_str) %>%
+    select(out) %>% pull()
+  if (last)
+    return(c(probe[1], insert, probe[2]))
+  else
+    return(c(probe[1], insert))
+}
+
+apply_rules <- function(input, rules, n=1, ...) {
+  for (i in 1:n) {
+    # window the input
+    win <- mwin(d, ...)
+    # insert new characters for each window
+    new_str <- NULL
+    for (wi in 1:length(win)) {
+      if (wi == length(win)) {
+        inserted <- apply_rule(win[[wi]], rules, last=TRUE)
+      } else {
+        inserted <- apply_rule(win[[wi]], rules)
+      }
+      new_str <- append(new_str, inserted)
+    }
+    d <- new_str
+  }
+  return(new_str)
+}
 ```
 
+```{r}
+polymer <- apply_rules(d, rules, n=10)
+
+```
+
+```{r}
+pd <- tibble(char = polymer)
+counts <- pd %>% count(char) %>% arrange(n)
+counts[nrow(counts),2] - counts[1,2] 
+```
+
+## Part 2 - 40 steps
+
+Yikes, brute forcing this is....not possible. But maybe we can learn about growth by looking at a few steps.
+
+
+First, Let's optimize rule application within tidyverse
+```{r}
+count_letters <- function(d) {
+  p <- tibble(char = d)
+  return(p %>% count(char))
+}
+
+move_win <- function(d, win_length=2) {
+  n_win <- length(d) - win_length + 1
+  out <- vector(mode='list', length=n_win)
+  for (i in 1:n_win) {
+    out[[i]] <- d[i:(i+win_length-1)]
+  }
+  A <- NULL
+  B <- NULL
+  for (i in 1:length(out)) {
+    A <- append(A, out[[i]][1])
+    B <- append(B, out[[i]][2])
+  }
+  out <- tibble(A=A,
+                B=B)
+    
+  return(out)
+}
+
+apply_rule2 <- function(d, R=rules) {
+  d <- d %>% 
+    unite(probe, A, B, remove=FALSE, sep='') %>% 
+    mutate(new = R$out[match(.$probe, R$input)]) %>%
+    select(A, new, B)
+  return(d)
+}
+
+tb2char <- function(d) {
+  # convert the tibble to a list of characters
+  f_char <- d[[1,1]]
+  chars <- d %>% unite(c, new, B, sep='') %>%
+    select(-A) %>%
+    pull() %>%
+    paste0(collapse='')
+  chars <- paste0(f_char, chars, collapse='') %>% 
+    strsplit("") %>% 
+    unlist()
+  return(chars)
+}
+
+apply_rules2 <- function(d, n=1) {
+  for (i in 1:n) {
+    d <- d %>%
+      move_win() %>%
+      apply_rule2() %>%
+      tb2char()
+  }
+  return(d)
+}
+```
+
+
+```{r}
+h <- NULL
+b <- NULL
+polymer2 <- d
+for (i in 1:10) {
+  print(i)
+  polymer2 <- polymer2 %>%
+      move_win() %>%
+      apply_rule2() %>%
+      tb2char()
+  pc <- polymer2 %>% count_letters()
+  h <- append(h, pc$n[pc$char == 'H'])
+  b <- append(b, pc$n[pc$char == 'B'])
+}
+print(h)
+print(b)
+```
+
+
+That doesn't look great. Maybe we can just track pairs.
+```{r}
+dw <- d %>% mwin()
+cp <- NULL
+for (i in 1:length(dw)) 
+  cp <- append(cp, paste0(dw[[i]], collapse=''))
+p <- tibble(pair = cp)
+p %>% head()
+```
+
+What we want to do instead is just keep track of pairs and number of letters. The `rules` tell us how many letters of each type to add, and we can just just a little bit of logic to know how many pairs to add.
