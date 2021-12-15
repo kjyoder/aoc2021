@@ -1554,3 +1554,14 @@ rules <- rules %>% select(-void)
 rules %>% head()
 ```
 
+```{r}
+mwin <- function(d, win_length=2) {
+  n_win <- length(d) - win_length + 1
+  out <- vector(mode='list', length=n_win)
+  for (i in 1:n_win) {
+    out[[i]] <- d[i:(i+win_length-1)]
+  }
+  return(out)
+}
+```
+
