@@ -1541,4 +1541,16 @@ for (i in 1:nrow(output)) {
 If you squnt, and recognize the top row is missing, then the letters are:
 RPCKFBLR
 
+# Day 14:
+
+Based on the starting input, assess each pair of letters (moving window of length 2) and insert the appropriate character based on the rules.
+```{r}
+require(tidyverse)
+input <- read_csv('data/aoc-14_input.txt', col_names='input')
+input %>% head()
+rules <- read_delim('data/aoc-14_rules.txt', col_names=c('input','void','out'),
+                    col_types = cols(.default=col_character()), delim=' ')
+rules <- rules %>% select(-void)
+rules %>% head()
+```
 
