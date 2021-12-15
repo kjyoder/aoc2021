@@ -1299,6 +1299,7 @@ get_children <- function(d, parent) {
     mutate(out = case_when(
       start == parent ~ end, 
       TRUE ~ start)) %>%
+    filter(out != 'start') %>%
     select(out) %>% pull()
   return(children)
 }
@@ -1380,11 +1381,10 @@ check_child2 <- function(path, node) {
         filter(!Big) %>%
         count(node) %>%
         select(n) %>%
-        pull() %>%
-        unique()
+        pull()
       # if no cave has been visited more than once
       # it's okay to visit this cave again
-      if (length(small_visits) == 1)
+      if (all(small_visits == 1))
         return(TRUE)
     } else {
       # node not visited yet, safe to add
@@ -1437,14 +1437,16 @@ add_children2 <- function(d, paths, n_paths = 0) {
 ```{r}
 # initialize
 res <- add_children2(d, list('start'))
+```
 
+```{r}
 # find all paths
-while (any(!sapply(paths2, 
+while (any(!sapply(res$paths, 
                    function(x) x[length(x)] == 'end'))) {
   res <- add_children2(d, res$paths, res$n_paths)
 }
 
-res$n_paths
+res$n_paths + length(res$paths)
 ```
 
 # Day 13:
