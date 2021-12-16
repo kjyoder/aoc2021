@@ -1546,13 +1546,11 @@ RPCKFBLR
 Based on the starting input, assess each pair of letters (moving window of length 2) and insert the appropriate character based on the rules.
 ```{r}
 require(tidyverse)
-input <- read_csv('data/aoc-14_input.txt', col_names='input',
-                  show_col_types=FALSE)
+input <- read_csv('data/aoc-14_input.txt', col_names='input')
 d <- input %>% pull() %>% strsplit("") %>% unlist()
 print(d)
 rules <- read_delim('data/aoc-14_rules.txt', col_names=c('input','void','out'),
-                    col_types = cols(.default=col_character()),
-                    show_col_types=FALSE, delim=' ')
+                    col_types = cols(.default=col_character()), delim=' ')
 rules <- rules %>% select(-void)
 rules %>% head()
 ```
@@ -1692,14 +1690,161 @@ print(b)
 ```
 
 
-That doesn't look great. Maybe we can just track pairs.
+That doesn't look great. 
+What we want to do instead is just keep track of pairs and number of letters. The `rules` tell us how many letters of each type to add, and we can just just a little bit of logic to know how many pairs to add.
+
 ```{r}
+# How many distinct letters might we see?
+length(unique(rules$out))
+```
+
+`10` isn't so many
+
+```{r}
+# What are the letters in alphabetical order?
+unique(rules$out) %>% sort()
+```
+
+```{r}
+new_rules <- rules %>%
+  separate(input, into=c('A', 'B'), sep=1:2) %>%
+  mutate(new1 = str_c(A,out),
+         new2 = str_c(out,B)) %>%
+  unite(input, A, B, sep='')
+
+counts <- rep(0, 10)
+
+pair_labels <- unique(new_rules$input) %>% sort
+pair_dict <- tibble(pairs=pair_labels) %>%
+  rowid_to_column()
+pair_dict %>% head()
+```
+
+
+```{r}
+initialize_pairs <- function(x, pair_counts, pdict=pair_dict) {
+  c <- x %>% count(pair)
+  pair_idx <- match(c$pair, pdict$pairs)
+  pair_counts[pair_idx] <- pair_counts[pair_idx] + c$n
+  return(pair_counts)
+}
+
+pc2pairs <- function(pair_counts, pair_dict) {
+  pairs <- NULL
+  for (i in 1:length(pair_counts)) {
+    if (pair_counts[i] > 0) {
+      pairs <- append(pairs, rep(pair_dict$pairs[i], pair_counts[i]))
+    }
+  }
+  return(pairs)
+}
+
+add_pairs <- function(pair_counts, pdict=pair_dict, rules=new_rules) {
+  new_counts <- rep(0, length(pair_counts))
+  # track relevant pair based on new pairs
+  for (i in 1:length(pair_counts)) {
+    np <- pair_counts[i]
+    if (np > 0) {
+      # lookup index in pair_dict
+      pid <- pdict[i,]
+      
+      #print(str_c('Found pair at [',i,']: ', pid$pairs))
+      
+      new <- new_rules %>%
+        filter(input == pid$pairs)
+          
+      new1 <- new$new1
+      new2 <- new$new2
+      #print(str_c('Adding new pairs: ',new1,' and ',new2))
+      
+      idx1 <- match(new1, pdict$pairs)
+      idx2 <- match(new2, pdict$pairs)
+      
+      # get index for new pairs
+      new_counts[idx1] <- new_counts[idx1] + np
+      new_counts[idx2] <- new_counts[idx2] + np
+      #print(sum(new_counts))
+    }
+  }
+  return(new_counts)
+}
+
+count_letters <- function(pair_counts, pdict=pair_dict) {
+  
+  letter <- tibble('B'=1, 'C'=2, 'F'=3, 'H'=4, 'K'=5,
+                   'N'=6, 'O'=7, 'P'=8, 'S'=9, 'V'=10)
+  letter_counts <- rep(0, length(letter))
+  
+  for (i in 1:length(pair_counts)) {
+    if (pair_counts[i] > 0) {
+      # find characters
+      pair <- pdict[i,2][[1]]
+      letters <- strsplit(pair,'')
+      idx1 <- letter[letters[[1]][1]]
+      idx2 <- letter[letters[[1]][2]]
+      letter_counts[idx1[[1]]] <- letter_counts[idx1[[1]]] + pair_counts[i]
+      letter_counts[idx2[[1]]] <- letter_counts[idx2[[1]]] + pair_counts[i]
+    }
+  }
+  # add one to B and one to K as first and last characters
+  letter_counts[1] <- letter_counts[1] + 1
+  letter_counts[5] <- letter_counts[5] + 1
+  counts <- tibble(letter = names(letter),
+                   count = letter_counts/2)
+  return(counts %>% arrange(letter))
+}
+```
+
+
+```{r}
+# intitialize list of pairs
 dw <- d %>% mwin()
 cp <- NULL
 for (i in 1:length(dw)) 
   cp <- append(cp, paste0(dw[[i]], collapse=''))
-p <- tibble(pair = cp)
-p %>% head()
+dp <- tibble(pair = cp)
+dp %>% head()
 ```
 
-What we want to do instead is just keep track of pairs and number of letters. The `rules` tell us how many letters of each type to add, and we can just just a little bit of logic to know how many pairs to add.
+```{r}
+#initialize after one step for testing
+dw2 <- d %>% move_win() %>% apply_rule2() %>% tb2char() %>% mwin()
+cp2 <- NULL
+for (i in 1:length(dw2)) 
+  cp2 <- append(cp2, paste0(dw2[[i]], collapse=''))
+dp2 <- tibble(pair = cp2)
+```
+
+
+```{r}
+pair_counts <- rep(0, nrow(pair_dict))
+pc <- initialize_pairs(dp, pair_counts)
+```
+
+```{r}
+times <- 10
+pc_t <- pc
+for (i in 1:times) {
+  pc_t <- add_pairs(pc_t)
+}
+pc_t %>% count_letters() %>%
+  arrange(count) %>%
+  slice(1,10)  %>%
+  select(count) %>%
+  pull() %>% diff()
+```
+
+
+```{r}
+times <- 40
+pc_t <- pc
+for (i in 1:times) {
+  pc_t <- add_pairs(pc_t)
+}
+val <- pc_t %>% count_letters() %>%
+  arrange(count) %>%
+  slice(1,10)  %>%
+  select(count) %>%
+  pull() %>% diff()
+sprintf('%.0f', val)
+```
