@@ -1870,7 +1870,8 @@ Then move towards lower-value areas until we get to (row=100, col=100)
 ```{r}
 navs <- list()
 
-navs[[1]] <- list('nid'=1, 'mat'=dm, 'searched'=dm*0, 'risk'=0, 'position'=NULL, 'finished'=FALSE)
+navs[[1]] <- list('nid'=1, 'mat'=dm, 'searched'=dm*0, 'risk'=0,
+                  'position'=NULL, 'xrd'=FALSE, 'finished'=FALSE)
 class(navs[[1]]) <- 'Navigator'
 
 init <- function(object, ...)    { UseMethod('init') }
@@ -1897,11 +1898,11 @@ ping.Navigator <- function(object, allow_diag=FALSE) {
   s <- object$searched
   res <- matrix(rep(-1,9), nrow=3)
   
-  dirs <- tibble(row = c(pr, pr, pr-1, pr+1),
-                 col = c(pc+1, pc-1, pc, pc))
+  dirs <- tibble(row = c(pr, pr+1),
+                 col = c(pc+1, pc))
   if (allow_diag) {
-    t2 <- tibble(row = c(pr-1, pr+1, pr-1, pr+1),
-                 col = c(pc-1, pc-1, pc+1, pc+1))
+    t2 <- tibble(row = c(pr+1),
+                 col = c(pc+1))
     dirs <- dirs %>%
       bind_rows(t2)
   }
@@ -1939,12 +1940,14 @@ step.Navigator <- function(object, row=0, col=0) {
 
 step_to.Navigator <- function(object, target) {
   targetrc <- target %>% i2rc()
-  positionrc <- object$position 
+  object$position['row'] <- targetrc['row']
+  object$position['col'] <- targetrc['col']
+  object$risk <- object$risk + object$mat[target]
+  object$mat[target] <- -1
+  object$searched[target] <- 1
   
-  if (targetrc['row'] == positionrc['row']) {
-    object <- object %>% step(col = targetrc['col'] - positionrc['col'])
-  } else {
-    object <- object %>% step(row = targetrc['row'] - positionrc['row'])
+  if (target == rc2i(100, 100)) {
+    object$finished <- TRUE
   }
   
   return(object)
@@ -1972,7 +1975,7 @@ clones.Navigator <- function(object, ...) {
                 ' to ', minrisk[i,]$id))
     nv <- object %>%
       step_to(minrisk[i,]$id)
-    nv$id <- str_c(root_id,'_',i)
+    nv$nid <- str_c(root_id,'_',i)
     out[[i]] <- nv
   }
   
@@ -2031,42 +2034,79 @@ rc2i <- function(r, c, nrow=100) {
 ```{r}
 find_xroad <- function(nv) {
   
-  for (i in 1:1e4) {
-    print(i)
-    #print(nv_test$position)
-    #print(length(which(nv_test$search > 0)))
-    options <- nv_test %>% ping()
+  while (!nv$finished) {
+    #print(i)
+    #print(nv$position)
+    #print(length(which(nv$search > 0)))
+    options <- nv %>% ping()
+    if (nrow(options) == 0) {
+      nv$finished <- TRUE
+      return(nv)
+    }
     minrisk <- options %>% 
       filter(risk == min(risk))
-    if (length(minrisk) == 1) {
+    
+    if (nrow(minrisk) == 1) {
       # great, only one choice
       minrc <- i2rc(minrisk[1,]$id)
-      if (minrc['row'] == nv_test$position['row']) {
-        nv_test <- nv_test %>% 
-          step(col=minrc['col'] - nv_test$position['col'])
+      if (minrc['row'] == nv$position['row']) {
+        nv <- nv %>% 
+          step(col=minrc['col'] - nv$position['col'])
       } else {
-        nv_test <- nv_test %>% 
-          step(row=minrc['row'] - nv_test$position['row'])
+        nv <- nv %>% 
+          step(row=minrc['row'] - nv$position['row'])
       }
     } else {
       # we've got a split
+      nv$xrd <- TRUE
       break
     }
   }
-  return(nv_test)
+  return(nv)
+}
+
+
+search_forward <- function(nv) {
+  
+  if (nv$finished) {
+    return (nv)
+  } else {
+    nv <- find_xroad(nv)
+  }
+  return(nv)
+}
+
+
+score_nv <- function(x) {
+  p <- x$position
+  if (p['row'] == 100 & p['col'] == 100) {
+    return(p$risk)
+  } else {
+    return(NA)
+  }
 }
 
 ```
 
-
+Hmm...don't think this is gonna work. Let's try Djikstra instead
+https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
 ```{r}
-nv <- list('nid'=1, 'mat'=dm, 'searched'=dm*0, 'risk'=0, 'position'=NULL, 'finished'=FALSE)
-class(nv) <- 'Navigator'
-
-nv_test <- nv %>% init()
-nv_xroads <- nv %>% find_xroad()
-nv_xroads %>% ping() 
+# inital matrix is dm
+n_row <- nrow(dm)
+n_col <- ncol(dm)
+visited <- matrix(rep(0,n_row*n_col), nrow=n_row)
+dist_mat <- matrix(rep(Inf,n_row*n_col), nrow=n_row)
+dist_mat[1] <- 0
 ```
 
+```{r}
+# for the current node, consider all unvisited neighbors
+r <- 1
+c <- 1
 
+while(sum(visited) > 0) {
+  id = rc2i(r, c)
+  # update distance 
+}
+```
 
