@@ -1848,3 +1848,225 @@ val <- pc_t %>% count_letters() %>%
   pull() %>% diff()
 sprintf('%.0f', val)
 ```
+
+# Day 15: Chiton
+Pathing through a big matrix, adding the `risk_level` of each step as you enter the space
+```{r}
+require(tidyverse)
+d <- read_csv('data/aoc-15.txt', col_names='val',
+              col_types=cols(.default=col_character()))
+dm <- d %>% 
+  separate(val, into=str_c('c',1:100), sep=1:100) %>%
+  mutate_all(as.integer) %>%
+  as.matrix()
+dim(dm)
+```
+
+Let's a make class to act as a navigator through the space
+
+We want to start in the upper right (row=1, col=1)
+Then move towards lower-value areas until we get to (row=100, col=100)
+
+```{r}
+navs <- list()
+
+navs[[1]] <- list('nid'=1, 'mat'=dm, 'searched'=dm*0, 'risk'=0, 'position'=NULL, 'finished'=FALSE)
+class(navs[[1]]) <- 'Navigator'
+
+init <- function(object, ...)    { UseMethod('init') }
+ping <- function(object, ...)    { UseMethod('ping') }
+step <- function(object, ...)    { UseMethod('step') }
+step_to <- function(object, ...) { UseMethod('step_to') }
+clones <- function(object, ...) { UseMethod('clones') }
+report <- function(object, ...)  { UseMethod('report') }
+summary <- function(object, ...) { UseMethod('summary') }
+
+init.Navigator <- function(object, nid=1, risk=0, row=1, col=1, searched=1) {
+  object$position <- c('row'=row, 'col'=col)
+  object$searched[searched] <- 1
+  object$mat[searched] <- -1
+  object$risk <- risk
+  return(object)
+}
+
+ping.Navigator <- function(object, allow_diag=FALSE) {
+  p <- object$position
+  pr <- p['row']
+  pc <- p['col']
+  m <- object$mat
+  s <- object$searched
+  res <- matrix(rep(-1,9), nrow=3)
+  
+  dirs <- tibble(row = c(pr, pr, pr-1, pr+1),
+                 col = c(pc+1, pc-1, pc, pc))
+  if (allow_diag) {
+    t2 <- tibble(row = c(pr-1, pr+1, pr-1, pr+1),
+                 col = c(pc-1, pc-1, pc+1, pc+1))
+    dirs <- dirs %>%
+      bind_rows(t2)
+  }
+  dirs <- dirs %>%
+    filter(row > 0 & row < nrow(m)) %>%
+    filter(col > 0 & col < ncol(m))
+  res <- tibble(id = rep(0, nrow(dirs)),
+                risk = rep(0, nrow(dirs)))
+  for (i in 1:nrow(dirs)) {
+    id <- rc2i(dirs[i,]$row, dirs[i,]$col)
+    res[i,]$id <- id
+    res[i,]$risk <- m[id]
+  }
+  res <- res %>%
+    filter(! id %in% which(s==1))
+  return(res)
+}
+
+step.Navigator <- function(object, row=0, col=0) {
+  p <- object$position
+  p['row'] <- p['row'] + row
+  p['col'] <- p['col'] + col
+  id <- rc2i(p['row'], p['col'])
+  object$risk <- object$risk + object$mat[p['row'], p['col']]
+  object$position <- p
+  object$mat[id] <- -1
+  object$searched[id] <- 1
+  
+  if (p['row'] == nrow(object$mat) & p['col'] == ncol(object$mat)) {
+    object$finished <- TRUE
+  }
+  
+  return(object)
+}
+
+step_to.Navigator <- function(object, target) {
+  targetrc <- target %>% i2rc()
+  positionrc <- object$position 
+  
+  if (targetrc['row'] == positionrc['row']) {
+    object <- object %>% step(col = targetrc['col'] - positionrc['col'])
+  } else {
+    object <- object %>% step(row = targetrc['row'] - positionrc['row'])
+  }
+  
+  return(object)
+}
+
+report.Navigator <- function(object, ...) {
+  return(object$risk)
+}
+
+
+clones.Navigator <- function(object, ...) {
+  # return a list of Navigator objects,
+  # one for each possible split, with ids
+  # <root_id>_<ordinal>
+  root_id <- rc2i(object$position['row'],
+                  object$position['col'])
+  
+  options <- object %>% ping()
+  minrisk <- options %>%
+    filter(risk == min(risk))
+  out <- list()
+  print('Generating clones...')
+  for (i in 1:nrow(minrisk)) {
+    print(str_c('Jumping from ', root_id,
+                ' to ', minrisk[i,]$id))
+    nv <- object %>%
+      step_to(minrisk[i,]$id)
+    nv$id <- str_c(root_id,'_',i)
+    out[[i]] <- nv
+  }
+  
+  return(out)
+}
+
+summary.Navigator <- function(object) {
+  print(str_c('Navigator: ', object$nid))
+  print(str_c('Currently at [', object$position['row'],
+              ', ', object$position['col'], '] AKA cell=', 
+              rc2i(object$position['row'], object$position['col'])))
+  print(str_c('After searching ', sum(object$searched)-1,' risk is: ', object$risk))
+  if(object$finished) {
+    print('Navigator has reached the exit')
+  } else {
+    print('Navigator has NOT reached the exit')
+  }
+}
+
+
+# we can recycle some from Day 9
+i2rc <- function(x, nrow=100) {
+  row <- x %% nrow
+  if (row == 0) {
+    row <- 10
+  }
+  col <- ceiling(x/nrow) 
+  return(c('row'=row, 'col'=col))
+}
+
+rc2i <- function(r, c, nrow=100) {
+  i <- (c-1)*nrow + r
+  return(i)
+}
+
+
+# # recursively check nodes
+# search_neighbor <- function(mat, r, c) {
+#   rmax <- nrow(mat)
+#   cmax <- ncol(mat)
+#   
+#   if (mat[r,c] == 0 || mat[r,c] == -1) return(mat)
+#   # mat[r,c] was not 0 or previously set
+#   mat[r,c] <- -1
+#   
+#   # check the neighbors
+#   if (r > 2) mat <- check_node(r-1, c, mat)
+#   if (c > 2) mat <- check_node(r, c-1, mat)
+#   if (r < rmax) mat <- check_node(r+1, c, mat)
+#   if (c < cmax) mat <- check_node(r, c+1, mat)
+#   
+#   return(mat)
+# }
+```
+
+```{r}
+find_xroad <- function(nv) {
+  
+  for (i in 1:1e4) {
+    print(i)
+    #print(nv_test$position)
+    #print(length(which(nv_test$search > 0)))
+    options <- nv_test %>% ping()
+    minrisk <- options %>% 
+      filter(risk == min(risk))
+    if (length(minrisk) == 1) {
+      # great, only one choice
+      minrc <- i2rc(minrisk[1,]$id)
+      if (minrc['row'] == nv_test$position['row']) {
+        nv_test <- nv_test %>% 
+          step(col=minrc['col'] - nv_test$position['col'])
+      } else {
+        nv_test <- nv_test %>% 
+          step(row=minrc['row'] - nv_test$position['row'])
+      }
+    } else {
+      # we've got a split
+      break
+    }
+  }
+  return(nv_test)
+}
+
+```
+
+
+```{r}
+nv <- list('nid'=1, 'mat'=dm, 'searched'=dm*0, 'risk'=0, 'position'=NULL, 'finished'=FALSE)
+class(nv) <- 'Navigator'
+
+nv_test <- nv %>% init()
+nv_xroads <- nv %>% find_xroad()
+nv_xroads %>% ping() 
+```
+
+
+
