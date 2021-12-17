@@ -2008,6 +2008,7 @@ i2rc <- function(x, nrow=100) {
 
 rc2i <- function(r, c, nrow=100) {
   i <- (c-1)*nrow + r
+  names(i) <- 'id'
   return(i)
 }
 
@@ -2090,6 +2091,59 @@ score_nv <- function(x) {
 
 Hmm...don't think this is gonna work. Let's try Djikstra instead
 https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
+
+
+```{r}
+check_neighbor <- function(cur_id, n_id, 
+                           td=dist_mat, risk=dm) {
+  # current node
+  cur_val <- td[cur_id]
+  # neighbor value
+  nb_val <- td[n_id]
+  # proposed val
+  prop <- cur_val + risk[n_id]
+  
+  if (prop < nb_val) {
+    td[n_id] <- prop
+  }
+  
+  out <- list('dist'=td, 'risk'=risk)
+}
+
+check_neighbors <- function(cur_id, visited, 
+                            td=dist_mat, risk=dm,
+                            nrow=100) {
+  
+  if (visited[cur_id]) {
+    out <- list('nbrs' = NULL,
+              'visited'=visited,
+              'dist'=td,
+              'risk'=risk)
+    return(out)
+  }
+  nbrs <- NULL
+  rc <- i2rc(cur_id, nrow)
+  r <- rc[1]
+  c <- rc[2]
+  
+  if (r < nrow(td)) nbrs <- append(nbrs, rc2i(r+1, c, nrow))
+  if (c < ncol(td)) nbrs <- append(nbrs, rc2i(r, c+1, nrow))
+  
+  for (ni in 1:length(nbrs)) {
+    res <- check_neighbor(cur_id, nbrs[ni],
+                          td, risk)
+    td <- res$dist
+  }
+  visited[cur_id] <- 1
+  out <- list('nbrs' = nbrs,
+              'visited'=visited,
+              'dist'=td,
+              'risk'=risk)
+  return(out)
+}
+```
+
+
 ```{r}
 # inital matrix is dm
 n_row <- nrow(dm)
@@ -2097,16 +2151,106 @@ n_col <- ncol(dm)
 visited <- matrix(rep(0,n_row*n_col), nrow=n_row)
 dist_mat <- matrix(rep(Inf,n_row*n_col), nrow=n_row)
 dist_mat[1] <- 0
-```
 
-```{r}
 # for the current node, consider all unvisited neighbors
 r <- 1
 c <- 1
-
-while(sum(visited) > 0) {
-  id = rc2i(r, c)
-  # update distance 
+id <- rc2i(r, c)
+nbrs <- id
+while(any(visited == 0)) {
+  nbrs_to_check <- NULL
+  # print(str_c('This loop we need to check ', length(nbrs),
+  #             ' nodes'))
+  for (i in 1:length(nbrs)) {
+    res <- check_neighbors(nbrs[i], visited,
+                           dist_mat, dm, n_row)
+    nbrs_to_check <- append(nbrs_to_check, res$nbrs)
+    visited <- res$visited
+    dist_mat <- res$dist
+  }
+  if (length(nbrs_to_check) > 0) {
+    nbrs <- unique(nbrs_to_check)
+  } else {
+    break
+  }
 }
 ```
 
+```{r}
+dist_mat[100,100]
+```
+
+## Day 15 Part 2: much bigger map
+
+```{r}
+increment_tile <- function(mat, times=1) {
+  mat <- mat + 1
+  mat[mat>9] <- 1
+  
+  times <- times - 1
+  if (times == 0)
+    return(mat)
+  else
+    return(increment_tile(mat, times))
+}
+
+m1 <- dm
+m2 <- dm %>% increment_tile()
+m3 <- dm %>% increment_tile(2)
+m4 <- dm %>% increment_tile(3)
+m5 <- dm %>% increment_tile(4)
+m6 <- dm %>% increment_tile(5)
+m7 <- dm %>% increment_tile(6)
+m8 <- dm %>% increment_tile(7)
+m9 <- dm %>% increment_tile(8)
+
+r1 <- cbind(m1, m2, m3, m4, m5)
+r2 <- cbind(m2, m3, m4, m5, m6)
+r3 <- cbind(m3, m4, m5, m6, m7)
+r4 <- cbind(m4, m5, m6, m7, m8)
+r5 <- cbind(m5, m6, m7, m8, m9)
+
+DM <- rbind(r1, r2, r3, r4, r5)
+```
+
+Ummm...I guess just try with the bigger input?
+
+```{r}
+# initial matrix is dm
+n_row <- nrow(DM)
+n_col <- ncol(DM)
+visited <- matrix(rep(0,n_row*n_col), nrow=n_row)
+dist_mat <- matrix(rep(Inf,n_row*n_col), nrow=n_row)
+dist_mat[1] <- 0
+
+# for the current node, consider all unvisited neighbors
+r <- 1
+c <- 1
+id <- rc2i(r, c)
+nbrs <- id
+while(any(visited == 0)) {
+  if (sum(visited) > 100 & sum(visited) %% 25000 == 0) {
+    print(str_c('Making progress. ', sum(visited)/25000, 'percent done.'))
+  }
+  nbrs_to_check <- NULL
+  # print(str_c('This loop we need to check ', length(nbrs),
+  #             ' nodes'))
+  for (i in 1:length(nbrs)) {
+    res <- check_neighbors(nbrs[i], visited,
+                           dist_mat, DM, n_row)
+    nbrs_to_check <- append(nbrs_to_check, res$nbrs)
+    visited <- res$visited
+    dist_mat <- res$dist
+  }
+  if (length(nbrs_to_check) > 0) {
+    nbrs <- unique(nbrs_to_check)
+  } else {
+    break
+  }
+}
+```
+
+
+```{r}
+DM[500,500]
+```
