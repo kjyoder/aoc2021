@@ -1,0 +1,109 @@
+---
+title: "Advent of Code: Day 20+"
+output: html_notebook
+---
+
+# Day 20
+```{r}
+require(tidyverse)
+algorithm <- scan('data/aoc-20_algorithm.txt', character())
+a_char <- str_split(algorithm, '')[[1]]
+alg <- if_else(a_char == ".", 0, 1)
+d <- read_csv('data/aoc-20_input.txt', col_names=c('dat'),
+              col_types=cols(.default = col_character()))
+d <- d %>%
+  separate(dat, into=str_c('c', 1:100), sep=1:100)
+dm <- d %>%
+  mutate_all(function(x) {
+    if_else(x==".",0,1)
+    }) %>%
+  as.matrix(nrow=100)
+```
+
+Borrow `bin2dec()` from Day 16.
+```{r}
+bin2dec <- function(b) {
+  n <- length(b)
+  d <- 0
+  for (ii in 1:n) {
+    d <- d + as.numeric(b[n-ii+1])*(2^(ii-1))
+  }
+  return(d)
+}
+
+score_position <- function(mat, r, c) {
+  cols <- (c-1):(c+1)
+  r1 <- mat[ r-1, cols]
+  r2 <- mat[ r  , cols]
+  r3 <- mat[ r+1, cols]
+  val <- bin2dec(c(r1, r2, r3))
+  return(val)
+}
+
+enhance <- function(dm, iteration=1) {
+  
+  n_row <- nrow(dm)
+  n_col <- ncol(dm)
+  pad <- 4
+  pad_offset <- pad/2
+  # expand in each direction and pad with 0s
+  # except that won't work because 9 0s -> 1
+  # we need to know the iteration to know whether to pad with 1s or 0s
+  if (iteration %% 2 == 0) {
+    out_mat <- matrix(1, n_row+pad, n_col+pad)
+  } else {
+    out_mat <- matrix(0, n_row+pad, n_col+pad)
+  }
+  in_mat <- out_mat
+  in_mat[pad_offset:(n_row+pad_offset-1) , pad_offset:(n_col+pad_offset-1)] <- dm[1:n_row, 1:n_col]
+  
+  out_row <- nrow(out_mat)
+  out_col <- ncol(out_mat)
+  # use a moving 3x3 window to get output at each input point
+  for (r in 2:(nrow(in_mat)-1) ) {
+    for (c in 2:(ncol(in_mat)-1) ) {
+      v <- score_position(in_mat, r, c)
+      out_mat[r, c] <- alg[v+1]
+    }
+  }
+  # handle outer edge
+  out_mat[c(1, out_row), 1:out_col] <- iteration %% 2
+  out_mat[1:out_row, c(1, out_col)] <- iteration %% 2
+
+  return(out_mat)
+}
+```
+
+```{r}
+test <- matrix(0, 15, 15)
+test[6,6] <- 1
+test[6,9] <- 1
+test[7,6] <- 1
+test[8,6] <- 1
+test[8,7] <- 1
+test[8,11] <- 1
+test[9,8] <- 1
+test[10,8] <- 1
+test[10,9] <- 1
+test[10,10] <- 1
+```
+
+
+```{r}
+dm %>% enhance() %>% enhance(2) %>% sum()
+```
+
+## Part 2
+```{r}
+dmw <- dm
+iter <- 1
+for (i in 1:50) {
+  dmw <- enhance(dmw, iter)
+  iter <- iter+1
+}
+```
+
+```{r}
+dmw %>% sum()
+```
+

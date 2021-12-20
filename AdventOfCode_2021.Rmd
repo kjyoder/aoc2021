@@ -2228,10 +2228,7 @@ r <- 1
 c <- 1
 id <- rc2i(r, c)
 nbrs <- id
-while(any(visited == 0)) {
-  if (sum(visited) > 100 & sum(visited) %% 25000 == 0) {
-    print(str_c('Making progress. ', sum(visited)/25000, 'percent done.'))
-  }
+while(dist_mat[100,100] == Inf) {
   nbrs_to_check <- NULL
   # print(str_c('This loop we need to check ', length(nbrs),
   #             ' nodes'))
@@ -2253,4 +2250,248 @@ while(any(visited == 0)) {
 
 ```{r}
 DM[500,500]
+```
+
+
+# Day 16:
+```{r}
+require(tidyverse)
+d <- read_csv('data/aoc-16.txt', col_names='packet',
+              col_types = cols(.default=col_character()))
+```
+
+```{r}
+hex2bin <- function(h) {
+  dict <- list('0'='0000',
+       '1'='0001',
+       '2'='0010',
+       '3'='0011',
+       '4'='0100',
+       '5'='0101',
+       '6'='0110',
+       '7'='0111',
+       '8'='1000',
+       '9'='1001',
+       'A'='1010',
+       'B'='1011',
+       'C'='1100',
+       'D'='1101',
+       'E'='1110',
+       'F'='1111')
+  return(dict[h][[1]])
+}
+
+bin2dec <- function(b) {
+  n <- length(b)
+  d <- 0
+  for (ii in 1:n) {
+    d <- d + as.numeric(b[n-ii+1])*(2^(ii-1))
+  }
+  return(d)
+}
+
+bin2hex <- function(b) {
+  if (length(b)>1) {
+    b <- paste0(b, collapse='')
+  }
+    dict <- list('0000'='0',
+       '0001'='1',
+       '0010'='2',
+       '0011'='3',
+       '0100'='4',
+       '0101'='5',
+       '0110'='6',
+       '0111'='7',
+       '1000'='8',
+       '1001'='9',
+       '1010'='A',
+       '1011'='B',
+       '1100'='C',
+       '1101'='D',
+       '1110'='E',
+       '1111'='F')
+  return(dict[b][[1]])
+}
+```
+
+
+```{r}
+read_packet <- function(chars, start_id = 1, char_id=char_ids) {
+  
+  # first 3 are version
+  ver <- bin2dec(chars[1:3 + (start_id-1)])
+  # next 3 are type
+  typ <- bin2dec(chars[4:6 + (start_id-1)])
+  
+  length_id <- NA
+  sub_packet <- NA
+  # if type is 4, we're dealing with a literal
+  # if type is not 4, it's an operator
+  idx <- 7 + (start_id-1)
+  
+  if (typ == 4) {
+    lbl <- "Simple number"
+    header_end <- idx-1
+    # grab 5 bits at a time until you get a 5-bit chunk that starts with a 0
+    val <- NULL
+    bits <- chars[idx:(idx+4)]
+    while (bits[1] == 1) {
+      val <- append(val, bits[2:5])
+      idx <- idx + 5
+      bits <- chars[idx:(idx+4)]
+    }
+    val <- append(val, bits[2:5])
+    idx <- idx + 5
+    
+    if (idx %% 4 == 1) {
+      # cool, at end of byte
+    } else {
+      if (idx %% 4 == 0) {
+        idx <- idx + 1
+      } else {
+        idx <- idx + 5 - (idx %% 4)
+      }
+    }
+    body_end <- idx - 1
+    packet_info <- bin2dec(val)
+  } else {
+    # it's an operator
+    
+    # get the length id
+    length_id <- bin2dec(chars[idx])
+    idx <- idx + 1
+    
+    if (length_id == 0) {
+      # the next 15 bits are a single number
+      #   number of bits included in subpacket
+      num <- idx:(idx+14)
+      idx <- idx+15
+      header_end <- idx-1
+      sub_length <- bin2dec(chars[num])
+      
+      lbl <- str_c('Operator: 15-bits. ', sub_length,' bits in this packet')
+      packet_info <- sub_length
+      sub_packet <- chars[idx:(idx+sub_length-1)]
+      body_end <- idx+sub_length-1
+    } else {
+      # length_id is 1, meaning next 11 bits indicate
+      # the number of subpackets
+      num <- idx:(idx+10)
+      idx <- idx+11
+      header_end <- idx-1
+      sub_length <- bin2dec(chars[num])
+      lbl <- str_c('Operator: n=',sub_length,' 11-bit number(s)')
+      
+      vals <- vector(mode='numeric', length=3)
+      for (si in 1:sub_length) {
+        num <- idx:(idx+10)
+        vals[si] <- bin2dec(chars[num])
+        idx <- idx+11
+      }
+      
+      packet_info <- vals
+      
+      body_end <- idx-1
+      #sub_packet <- bin2dec(sub_packet)
+    }
+  }
+  remaining <- 0
+  if (idx != length(chars)) {
+    remaining <- length(chars) - idx
+  }
+  
+  # make sure body end is at the end of a byte
+  while (char_id[body_end] %% 4 != 0) {
+    body_end <- body_end + 1
+  }
+  
+  hex_str <- NULL
+  for (i in 1:(body_end/4)) {
+    hex_str <- append(hex_str, bin2hex(
+      chars[ ((i*4)-3):(i*4)  ] ))
+  }
+  
+  out <- list('version'=ver, 'type'=typ, 'length_id'=length_id, 
+              'val'=packet_info, 'sub_packets'=sub_packet,
+              'start_id'=start_id,
+              'header_end'=header_end, 'body_end'=body_end,
+              'remain'=remaining, 'label'=lbl, 
+              'hexstr'= paste0(hex_str, collapse='')   )
+  
+  return(out)
+}
+
+get_subpackets <- function(packet) {
+  n_packets <- packet$val
+  p_done <- 0
+  while (p_done < n_packets) {
+    p <- read_packet()
+    
+    p_done <- p_done + 1
+  }
+  # check type
+  if (packet$type == 4) {
+    # just score it
+    scored <- read_packet_
+  }
+}
+```
+
+
+
+
+
+
+```{r}
+# all_packets <- list()
+# processed_chars <- rep(0, length(chars))
+# all_packets <- append(all_packets, read_packet(chars))
+# if (all_packets[[length(all_packets)]]$type == 4) {
+#   processed_chars
+# }
+```
+
+```{r}
+char_ids <- 1:length(chars)
+# get first packet
+start_id <- 1
+p1 <- read_packet(chars, start_id)
+pchars <- p1$sub_packets
+p1
+
+start_id <- p1$header_end+1
+p2 <- read_packet(chars, start_id)
+p2
+
+start_id <- p2$body_end+1
+p3 <- read_packet(chars, start_id)
+p3
+```
+
+```{r}
+p2 <- read_packet(pchars)
+p2
+pchars <- pchars[ (p2$body_end+1) : length(pchars)]
+
+p3 <- read_packet(pchars)
+pchars <- pchars[ (p3$body_end+1) : length(pchars)]
+p3
+
+p4 <- read_packet(pchars)
+
+# there are 6 subpackets
+sub_packs <- vector(mode='list', length=6)
+p_end <- length(pchars)
+un_proc <- pchars[(p2$body_end+1):p_end]
+u_end <- length(un_proc)
+
+p2.1 <- read_packet( un_proc )
+
+p2.2 <- read_packet (un_proc[(p2.1$body_end+1):u_end])
+
+p2.2 <- read_packet( pchars[p2.1$next_idx : p_end ] )
+p2.3 <- read_packet( pchars[p2.2$next_idx : p_end ] )
+p2.4 <- read_packet( pchars[p2.3$next_idx : p_end ] )
+p2.5 <- read_packet( pchars[p2.4$next_idx : p_end ] )
+p2.6 <- read_packet( pchars[p2.5$next_idx : p_end ] )
 ```
